@@ -9,6 +9,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Assistant:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%2314213D'/%3E%3Ctext x='50' y='68' font-family='serif' font-size='55' fill='%23C9A961' text-anchor='middle' font-weight='700'%3E%D7%93%3C/text%3E%3C/svg%3E">
+<!-- PWA -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#14213D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="דורון">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -179,8 +186,120 @@
   <div class="modal" id="modalBox"></div>
 </div>
 
+<!-- PWA install bottom sheet (mobile only) -->
+<div class="pwa-sheet" id="pwaSheet" aria-hidden="true">
+  <div class="pwa-sheet-card">
+    <button class="pwa-sheet-close" onclick="dismissPwa()" aria-label="סגור">×</button>
+    <div class="pwa-sheet-icon">
+      <img src="/icon-192.png" alt="דורון" width="56" height="56">
+    </div>
+    <h3>קבל את האפליקציה במסך הבית</h3>
+    <p id="pwaSheetText">גישה מהירה לקורסים שלך, צפייה במסך מלא, ועדכונים — בלי להוריד מחנות אפליקציות.</p>
+    <div class="pwa-sheet-actions">
+      <button class="btn btn-primary btn-block" id="pwaInstallBtn" onclick="triggerInstall()">הוסף למסך הבית</button>
+      <button class="btn btn-ghost btn-sm" onclick="dismissPwa()">לא עכשיו</button>
+    </div>
+    <!-- iOS instructions (shown only on iOS) -->
+    <div class="pwa-ios-steps" id="pwaIosSteps" style="display:none">
+      <div class="pwa-step">
+        <span class="pwa-step-num">1</span>
+        <div>לחץ על כפתור השיתוף
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+          בתחתית הדפדפן
+        </div>
+      </div>
+      <div class="pwa-step">
+        <span class="pwa-step-num">2</span>
+        <div>בחר <strong>"הוסף למסך הבית"</strong>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+        </div>
+      </div>
+      <div class="pwa-step">
+        <span class="pwa-step-num">3</span>
+        <div>לחץ <strong>"הוסף"</strong> בפינה</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="/config.js"></script>
 <script src="/api.js"></script>
 <script src="/main.js"></script>
+<script>
+// ============ PWA Install Prompt ============
+let deferredInstallEvent = null;
+
+// Capture the install event so we can trigger it on button click
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallEvent = e;
+});
+
+// Hide the sheet if user already installed
+window.addEventListener('appinstalled', () => {
+  hidePwa();
+  try { localStorage.setItem('pwa:installed', '1'); } catch {}
+});
+
+// Show the sheet only on mobile, only if not installed yet
+function maybeShowPwa() {
+  // Already running in standalone (app mode)?
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  if (isStandalone) return;
+  
+  // Mobile only
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  if (!isMobile) return;
+  
+  // Already installed in this session?
+  try { if (localStorage.getItem('pwa:installed') === '1') return; } catch {}
+  
+  // iOS detection (for showing iOS-specific instructions)
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if (isIOS) {
+    document.getElementById('pwaInstallBtn').style.display = 'none';
+    document.getElementById('pwaIosSteps').style.display = 'block';
+    document.getElementById('pwaSheetText').textContent = 'התקן את דורון על האייפון שלך בכמה לחיצות:';
+  } else {
+    // Android — needs the deferred event to be available
+    document.getElementById('pwaIosSteps').style.display = 'none';
+  }
+  
+  // Show after a small delay so the page renders first
+  setTimeout(() => {
+    document.getElementById('pwaSheet').classList.add('open');
+  }, 1200);
+}
+
+window.triggerInstall = async function() {
+  if (!deferredInstallEvent) {
+    // Fallback (browser doesn't expose the prompt) — just close
+    hidePwa();
+    return;
+  }
+  deferredInstallEvent.prompt();
+  const { outcome } = await deferredInstallEvent.userChoice;
+  deferredInstallEvent = null;
+  if (outcome === 'accepted') {
+    try { localStorage.setItem('pwa:installed', '1'); } catch {}
+  }
+  hidePwa();
+};
+
+window.dismissPwa = function() { hidePwa(); };
+function hidePwa() {
+  document.getElementById('pwaSheet').classList.remove('open');
+}
+
+// Show on every page load (per user's request)
+maybeShowPwa();
+
+// Register the service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+</script>
 </body>
 </html>
