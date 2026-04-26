@@ -193,14 +193,40 @@
       if (data.free) {
         msg.innerHTML = `
           <div class="form-success">
-            ✓ נרשמת בהצלחה! בדוק את האימייל שלך לקבלת פרטי הגישה.
+            <strong>✓ נרשמת בהצלחה!</strong><br>
+            בדוק את האימייל שלך לקבלת פרטי הגישה.
           </div>`;
         setTimeout(() => { window.location = '/login.html'; }, 2500);
       } else if (data.payUrl) {
         msg.innerHTML = `<div class="form-info">מעבירים אותך לעמוד התשלום המאובטח...</div>`;
         setTimeout(() => { window.location = data.payUrl; }, 800);
+      } else if (data.manual || data.ok) {
+        // Manual flow — order saved, admin will contact the customer
+        document.getElementById('modalBox').innerHTML = `
+          <div class="modal-head">
+            <h3>קיבלנו את הבקשה שלך! ✓</h3>
+            <button class="modal-close" onclick="closeModal()">×</button>
+          </div>
+          <div class="modal-body" style="text-align:center;padding:30px 26px">
+            <div style="width:80px;height:80px;border-radius:50%;background:rgba(76,157,95,.15);color:#2c6b3c;display:grid;place-items:center;margin:0 auto 20px">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h3 style="font-family:'Frank Ruhl Libre',serif;font-size:24px;color:var(--navy);margin-bottom:14px">תודה ${escapeHtml(fullName.split(' ')[0])}!</h3>
+            <p style="font-size:16px;line-height:1.7;color:var(--text-soft);margin-bottom:20px">
+              קיבלנו את הבקשה שלך לקורס<br>
+              <strong style="color:var(--navy)">${escapeHtml(data.order ? data.order.courseTitle : '')}</strong>
+            </p>
+            <div style="background:var(--cream);border-radius:12px;padding:18px 22px;margin:20px 0;text-align:right">
+              <p style="font-size:15px;line-height:1.7;color:var(--text-soft);margin:0">
+                <strong>מה הלאה?</strong><br>
+                נחזור אליך תוך מספר שעות עם לינק תשלום מאובטח. לאחר התשלום תקבל גישה מיידית לאזור האישי שלך.
+              </p>
+            </div>
+            <p class="text-muted" style="font-size:13px">בדוק את תיבת הדואר שלך — נשלח לך גם אימייל אישור</p>
+            <button class="btn btn-primary mt-16" onclick="closeModal()">סגור</button>
+          </div>`;
       } else {
-        msg.innerHTML = '<div class="form-error">לא הצלחנו ליצור עמוד תשלום. נסה שוב או צור קשר.</div>';
+        msg.innerHTML = '<div class="form-error">משהו השתבש. אנא נסה שוב או צור קשר.</div>';
         btn.disabled = false;
         btn.innerHTML = 'המשך לתשלום';
       }

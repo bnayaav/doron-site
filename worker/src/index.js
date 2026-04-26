@@ -174,25 +174,22 @@ async function activateOrder(env, orderId, loginUrl) {
   return { order, user: u, emailResult };
 }
 
-async function buildIcountPayLink(env, order, returnUrl) {
-  const cfgRaw = await env.KV.get("icount_config");
-  if (!cfgRaw) throw new Error("iCount לא הוגדר. הוסף פרטי גישה בפאנל הניהול → הגדרות.");
-  const cfg = JSON.parse(cfgRaw);
-  // iCount hosted-checkout (paypage) — opens a payment page hosted by iCount
+function buildPaypageUrl(course, order, returnUrl) {
+  // course.paypageUrl is the dedicated iCount paypage URL set per-course in admin
+  if (!course.paypageUrl) {
+    throw new Error("דף תשלום לא הוגדר עבור קורס זה. אנא צור קשר.");
+  }
+  // Pass customer details + orderId through query params so iCount pre-fills the form
+  // and we can match the order back to a customer on success_url return
+  const sep = course.paypageUrl.includes("?") ? "&" : "?";
   const params = new URLSearchParams({
-    cid: cfg.companyId,
-    user: cfg.user,
-    pass: cfg.password,
-    sum: String(order.amount),
-    currency_code: "ILS",
-    description: order.courseTitle,
-    custom_info: order.id,
-    email: order.email,
-    full_name: order.fullName,
-    phone: order.phone || "",
-    success_url: returnUrl,
+    cs: order.fullName || "",      // customer name (iCount param)
+    em: order.email || "",          // email
+    ph: order.phone || "",          // phone
+    custom: order.id,                // our order ID — we'll get it back via success_url
+    success_url: returnUrl || "",
   });
-  return `https://api.icount.co.il/api/v3.php/?${params.toString()}`;
+  return course.paypageUrl + sep + params.toString();
 }
 
 export default {
@@ -442,21 +439,55 @@ export default {
           const r = await activateOrder(env, orderId, returnUrl);
           return wrap(json({ ok: true, free: true, ...r }));
         }
-        const cfgRaw = await env.KV.get("icount_config");
-        if (!cfgRaw) {
-          return wrap(json({
-            error: "תשלומים אונליין טרם הוגדרו. צור קשר טלפוני להשלמת הרכישה.",
-            order, manual: true,
-          }, 503));
+        // Auto-paypage flow (when admin sets course.paypageUrl)
+        if (course.paypageUrl) {
+          try {
+            const payUrl = buildPaypageUrl(course, order, returnUrl || `https://${url.host}/?paid=${orderId}`);
+            order.payUrl = payUrl;
+            await env.KV.put(`order:${orderId}`, JSON.stringify(order));
+            return wrap(json({ ok: true, orderId, payUrl }));
+          } catch (e) { /* fall through to manual */ }
         }
+        // Manual flow — order is saved, admin will follow up with a payment link.
+        // Notify admin + send customer confirmation email (don't await — fire & forget).
         try {
-          const payUrl = await buildIcountPayLink(env, order, returnUrl || `https://${url.host}/checkout-success?o=${orderId}`);
-          order.payUrl = payUrl;
-          await env.KV.put(`order:${orderId}`, JSON.stringify(order));
-          return wrap(json({ ok: true, orderId, payUrl }));
-        } catch (e) {
-          return wrap(json({ error: e.message }, 500));
-        }
+          const siteCfgRaw = await env.KV.get("site_config");
+          const siteCfg = siteCfgRaw ? JSON.parse(siteCfgRaw) : {};
+          const adminEmail = siteCfg.adminEmail;
+          if (adminEmail) {
+            await sendEmail(env, adminEmail, "🎉 הזמנה חדשה באתר!", `
+              <div dir="rtl" style="font-family:Arial,sans-serif;background:#FAF7F2;padding:30px;color:#1a1a1a">
+                <div style="max-width:560px;margin:0 auto;background:white;border-radius:14px;padding:28px">
+                  <h2 style="color:#14213D;font-family:Georgia,serif;margin:0 0 16px">הזמנה חדשה ממתינה לתשלום</h2>
+                  <table style="width:100%;border-collapse:collapse;font-size:15px">
+                    <tr><td style="padding:8px 0;color:#888;width:30%">קורס:</td><td style="padding:8px 0;font-weight:600">${order.courseTitle}</td></tr>
+                    <tr><td style="padding:8px 0;color:#888">סכום:</td><td style="padding:8px 0;font-weight:600">${order.amount} ₪</td></tr>
+                    <tr><td style="padding:8px 0;color:#888">לקוח:</td><td style="padding:8px 0;font-weight:600">${order.fullName}</td></tr>
+                    <tr><td style="padding:8px 0;color:#888">אימייל:</td><td style="padding:8px 0"><a href="mailto:${order.email}" style="color:#14213D">${order.email}</a></td></tr>
+                    <tr><td style="padding:8px 0;color:#888">טלפון:</td><td style="padding:8px 0"><a href="tel:${order.phone}" style="color:#14213D">${order.phone || '-'}</a></td></tr>
+                  </table>
+                  <p style="margin-top:20px;font-size:14px;color:#888">היכנס לפאנל הניהול → הזמנות, ושלח ללקוח לינק תשלום. לאחר התשלום לחץ "הפעל ידנית" כדי לפתוח את הקורס במייל אוטומטי.</p>
+                </div>
+              </div>`);
+          }
+          // Customer confirmation
+          await sendEmail(env, order.email, "קיבלנו את ההזמנה שלך - דורון", `
+            <div dir="rtl" style="font-family:Arial,sans-serif;background:#FAF7F2;padding:30px;color:#1a1a1a">
+              <div style="max-width:560px;margin:0 auto;background:white;border-radius:14px;padding:32px">
+                <h1 style="color:#14213D;font-family:Georgia,serif;margin:0 0 8px">תודה ${order.fullName}!</h1>
+                <p style="color:#A68940;font-weight:600;letter-spacing:.1em;font-size:13px;margin:0 0 24px">דורון · אימון חיים באמונה</p>
+                <p style="font-size:16px;line-height:1.7">קיבלנו את הבקשה שלך לקורס <strong>${order.courseTitle}</strong>.</p>
+                <div style="background:#FAF7F2;border:1px solid #EBE2D3;border-radius:10px;padding:18px;margin:20px 0">
+                  <strong style="color:#14213D">מה הלאה?</strong>
+                  <p style="margin:8px 0 0;font-size:14.5px;line-height:1.7">אחזור אליך תוך מספר שעות עם לינק תשלום מאובטח. לאחר התשלום תקבל מייל נוסף עם פרטי גישה לאזור האישי שלך.</p>
+                </div>
+                <p style="font-size:14px;color:#888;line-height:1.7">אם יש לך שאלות, פשוט השב למייל הזה.</p>
+                <hr style="border:none;border-top:1px solid #EBE2D3;margin:24px 0">
+                <p style="font-size:13px;color:#888;text-align:center">דורון · אימון חיים באמונה</p>
+              </div>
+            </div>`);
+        } catch (e) { console.error("notification error:", e); }
+        return wrap(json({ ok: true, orderId, manual: true, order }));
       }
 
       if (path === "/api/checkout/icount-webhook" && method === "POST") {

@@ -172,6 +172,17 @@
       </div>
       
       <div class="section-card">
+        <h4 style="margin-bottom:14px">🔔 התראות הזמנות</h4>
+        <p class="text-muted" style="margin-bottom:14px">בכל הזמנה חדשה תקבל מייל עם פרטי הלקוח, כדי שתוכל לשלוח לו לינק תשלום</p>
+        <div id="notifyMsg"></div>
+        <div class="field">
+          <label>אימייל לקבלת התראות</label>
+          <input type="email" id="adminEmail" placeholder="doron.avihzer@gmail.com">
+        </div>
+        <button class="btn btn-primary" onclick="saveNotifyEmail()">שמור</button>
+      </div>
+      
+      <div class="section-card">
         <h4 style="margin-bottom:14px">🔐 שינוי סיסמת מנהל</h4>
         <div id="adminPwdMsg"></div>
         <div class="field"><label>סיסמה נוכחית</label><input type="password" id="oldAdPwd"></div>
@@ -837,8 +848,26 @@ async function loadSettings() {
       document.getElementById('resendFrom').value = cfg.resend.from || '';
       document.getElementById('resendKey').placeholder = '**** (מוגדר)';
     }
+    if (cfg.site && cfg.site.adminEmail) {
+      document.getElementById('adminEmail').value = cfg.site.adminEmail;
+    }
   } catch (err) { console.warn(err); }
 }
+
+window.saveNotifyEmail = async function() {
+  const adminEmail = document.getElementById('adminEmail').value.trim();
+  const msg = document.getElementById('notifyMsg');
+  msg.innerHTML = '';
+  if (adminEmail && !/.+@.+\..+/.test(adminEmail)) {
+    msg.innerHTML = '<div class="form-error">כתובת אימייל לא תקינה</div>';
+    return;
+  }
+  try {
+    await API.saveConfig({ site: { adminEmail, currency: '₪' } });
+    msg.innerHTML = '<div class="form-success">נשמר! מעכשיו תקבל התראות על הזמנות חדשות</div>';
+    setTimeout(() => msg.innerHTML = '', 3000);
+  } catch (err) { msg.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+};
 
 window.saveResend = async function() {
   const apiKey = document.getElementById('resendKey').value.trim();
