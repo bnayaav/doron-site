@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>פאנל ניהול · דורון</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Assistant:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<!-- Login screen -->
+<div class="auth-page" id="loginScreen">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="brand-mark">ד</div>
+      <h1>פאנל ניהול</h1>
+      <p>דורון · אימון חיים באמונה</p>
+    </div>
+    <form onsubmit="event.preventDefault();doAdminLogin();">
+      <div id="adminLoginMsg"></div>
+      <div class="field"><label>שם משתמש</label><input type="text" id="adUser" required value="doron"></div>
+      <div class="field"><label>סיסמה</label><input type="password" id="adPass" required></div>
+      <button type="submit" class="btn btn-primary btn-block" id="adBtn">כניסה</button>
+    </form>
+    <div class="auth-foot"><a href="/" style="color:var(--text-muted)">← חזרה לאתר</a></div>
+  </div>
+</div>
+
+<!-- Admin shell (hidden until logged in) -->
+<div class="dash-shell" id="adminShell" style="display:none">
+  <header class="dash-header">
+    <div class="dash-header-inner">
+      <a href="/" class="brand">
+        <div class="brand-mark">ד</div>
+        <div class="brand-name">דורון<small>פאנל ניהול</small></div>
+      </a>
+      <div class="dash-user">
+        <div class="dash-avatar" style="background:linear-gradient(135deg,var(--navy),var(--navy-soft));color:var(--gold)">ד</div>
+        <div class="dash-user-info"><strong>דורון</strong><small>מנהל</small></div>
+        <button class="btn btn-ghost btn-sm" onclick="adminLogout()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+  
+  <div class="dash-content">
+    <h1 class="dash-h1">ברוך הבא לפאנל הניהול</h1>
+    <p class="dash-sub">ניהול הקורסים, התלמידים, ההזמנות וההגדרות במקום אחד.</p>
+    
+    <div class="dash-tabs" id="adminTabs">
+      <button class="dash-tab active" data-tab="overview">סקירה</button>
+      <button class="dash-tab" data-tab="catalog">קורסים</button>
+      <button class="dash-tab" data-tab="content">תוכן</button>
+      <button class="dash-tab" data-tab="users">תלמידים</button>
+      <button class="dash-tab" data-tab="orders">הזמנות</button>
+      <button class="dash-tab" data-tab="chats">צ'אט<span class="tab-badge" id="chatBadge" style="display:none">0</span></button>
+      <button class="dash-tab" data-tab="settings">הגדרות</button>
+    </div>
+    
+    <!-- Overview -->
+    <div class="dash-pane" id="pane-overview">
+      <div class="stat-cards" id="statCards"></div>
+      <div class="section-card">
+        <h4 style="margin-bottom:10px">צעדים מומלצים להתחלה מהירה</h4>
+        <ol style="padding-right:18px;line-height:1.9;color:var(--text-soft);font-size:14.5px">
+          <li>הגדר את <strong>iCount</strong> ו-<strong>Resend</strong> בלשונית "הגדרות"</li>
+          <li>צור קורס ראשון בלשונית "קורסים" עם תיאור, מחיר, ותכונות</li>
+          <li>הוסף שיעורי וידאו וחומרים נלווים לקורס</li>
+          <li>פרסם את הקורס (סמן "מפורסם") כדי שיופיע בעמוד הראשי</li>
+          <li>שתף את כתובת האתר עם הלקוחות</li>
+        </ol>
+      </div>
+    </div>
+    
+    <!-- Catalog -->
+    <div class="dash-pane" id="pane-catalog" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:10px;flex-wrap:wrap">
+        <h3 style="font-size:22px;color:var(--navy)">קורסים</h3>
+        <button class="btn btn-primary btn-sm" onclick="newCourse()">+ קורס חדש</button>
+      </div>
+      <div id="coursesList"></div>
+    </div>
+    
+    <!-- Content (videos + materials per course) -->
+    <div class="dash-pane" id="pane-content" style="display:none">
+      <h3 style="font-size:22px;color:var(--navy);margin-bottom:14px">תוכן הקורסים</h3>
+      <p class="text-muted" style="margin-bottom:14px">בחר קורס לעריכת השיעורים והחומרים שלו. ניתן גם להוסיף מאמרים לעמוד הראשי.</p>
+      <div class="course-pill-row" id="contentCoursePills"></div>
+      <div id="contentEditor"></div>
+      <div style="margin-top:30px">
+        <h4 style="font-size:18px;color:var(--navy);margin-bottom:10px">מאמרים בעמוד הראשי</h4>
+        <div class="section-card">
+          <div class="field"><label>כותרת</label><input type="text" id="artTitle"></div>
+          <div class="field-group">
+            <div class="field">
+              <label>קטגוריה</label>
+              <select id="artCategory">
+                <option value="foundation">מאמר יסוד</option>
+                <option value="opinion">טור דעה</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><label>תוכן</label><textarea id="artContent" style="min-height:140px"></textarea></div>
+          <button class="btn btn-primary" onclick="addArticle()">פרסם מאמר</button>
+          <div id="artMsg"></div>
+        </div>
+        <div id="articlesAdminList" style="margin-top:14px"></div>
+      </div>
+    </div>
+    
+    <!-- Users -->
+    <div class="dash-pane" id="pane-users" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:10px;flex-wrap:wrap">
+        <h3 style="font-size:22px;color:var(--navy)">תלמידים</h3>
+        <button class="btn btn-primary btn-sm" onclick="newUser()">+ הוסף תלמיד</button>
+      </div>
+      <div id="usersList"></div>
+    </div>
+    
+    <!-- Orders -->
+    <div class="dash-pane" id="pane-orders" style="display:none">
+      <h3 style="font-size:22px;color:var(--navy);margin-bottom:14px">הזמנות</h3>
+      <div id="ordersList"></div>
+    </div>
+    
+    <!-- Chats -->
+    <div class="dash-pane" id="pane-chats" style="display:none">
+      <h3 style="font-size:22px;color:var(--navy);margin-bottom:14px">הודעות מתלמידים</h3>
+      <div id="chatsContainer"></div>
+    </div>
+    
+    <!-- Settings -->
+    <div class="dash-pane" id="pane-settings" style="display:none">
+      <h3 style="font-size:22px;color:var(--navy);margin-bottom:14px">הגדרות מערכת</h3>
+      
+      <div class="section-card">
+        <h4 style="margin-bottom:14px">📧 הגדרות מייל (Resend)</h4>
+        <p class="text-muted" style="margin-bottom:14px">כדי לשלוח אוטומטית למיילים פרטי גישה, יש לפתוח חשבון חינמי ב-<a href="https://resend.com" target="_blank" style="color:var(--gold-dark)">resend.com</a> ולהדביק את ה-API Key.</p>
+        <div id="resendMsg"></div>
+        <div class="field">
+          <label>Resend API Key</label>
+          <input type="password" id="resendKey" placeholder="re_xxxxxxxxxx">
+          <p class="hint">השאר ריק כדי לא לשנות את הקיים</p>
+        </div>
+        <div class="field">
+          <label>שולח (From)</label>
+          <input type="text" id="resendFrom" placeholder="דורון <onboarding@resend.dev>">
+          <p class="hint">לפני אימות דומיין משלך, השתמש ב-onboarding@resend.dev</p>
+        </div>
+        <div class="flex-gap">
+          <button class="btn btn-primary" onclick="saveResend()">שמור</button>
+          <button class="btn btn-outline" onclick="testEmail()">שלח מייל בדיקה</button>
+        </div>
+      </div>
+      
+      <div class="section-card">
+        <h4 style="margin-bottom:14px">💳 הגדרות תשלום (iCount)</h4>
+        <p class="text-muted" style="margin-bottom:14px">הזן את פרטי החיבור ל-iCount כדי לאפשר תשלומים אונליין עם חשבונית ישראלית.</p>
+        <div id="icountMsg"></div>
+        <div class="field-group">
+          <div class="field"><label>Company ID</label><input type="text" id="icCid" placeholder="123456"></div>
+          <div class="field"><label>שם משתמש</label><input type="text" id="icUser"></div>
+        </div>
+        <div class="field"><label>סיסמה</label><input type="password" id="icPass" placeholder="********">
+          <p class="hint">השאר ריק כדי לא לשנות</p>
+        </div>
+        <button class="btn btn-primary" onclick="saveIcount()">שמור</button>
+      </div>
+      
+      <div class="section-card">
+        <h4 style="margin-bottom:14px">🔐 שינוי סיסמת מנהל</h4>
+        <div id="adminPwdMsg"></div>
+        <div class="field"><label>סיסמה נוכחית</label><input type="password" id="oldAdPwd"></div>
+        <div class="field-group">
+          <div class="field"><label>סיסמה חדשה</label><input type="password" id="newAdPwd"></div>
+          <div class="field"><label>אישור</label><input type="password" id="newAdPwd2"></div>
+        </div>
+        <button class="btn btn-primary" onclick="changeAdminPassword()">עדכן</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<script src="/config.js"></script>
+<script src="/api.js"></script>
+<script>
+// ==================== State ====================
+let allCourses = [];
+let allUsers = [];
+let activeContentCourse = null;
+let activeChatUser = null;
+let chatPollTimer = null;
+
+// ==================== Init ====================
+if (Auth.adminToken) {
+  showAdmin();
+}
+
+document.querySelectorAll('.dash-tab').forEach(t => {
+  t.addEventListener('click', () => showAdminTab(t.dataset.tab));
+});
+
+// ==================== Auth ====================
+async function doAdminLogin() {
+  const user = document.getElementById('adUser').value.trim();
+  const pass = document.getElementById('adPass').value;
+  const msg = document.getElementById('adminLoginMsg');
+  const btn = document.getElementById('adBtn');
+  msg.innerHTML = '';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> מתחבר...';
+  try {
+    const data = await API.adminLogin(user, pass);
+    Auth.setAdminToken(data.token);
+    showAdmin();
+  } catch (err) {
+    msg.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'כניסה';
+  }
+}
+
+async function adminLogout() {
+  await API.logout();
+  Auth.setAdminToken(null);
+  window.location.reload();
+}
+
+function showAdmin() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminShell').style.display = '';
+  loadOverview();
+}
+
+// ==================== Tab switching ====================
+function showAdminTab(name) {
+  document.querySelectorAll('.dash-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.dash-pane').forEach(p => p.style.display = 'none');
+  document.getElementById('pane-' + name).style.display = '';
+  if (name === 'overview') loadOverview();
+  if (name === 'catalog') loadCatalog();
+  if (name === 'content') loadContent();
+  if (name === 'users') loadUsers();
+  if (name === 'orders') loadOrders();
+  if (name === 'chats') loadChats();
+  if (name === 'settings') loadSettings();
+}
+
+// ==================== Overview ====================
+async function loadOverview() {
+  try {
+    const stats = await API.adminStats();
+    document.getElementById('statCards').innerHTML = `
+      <div class="stat-card">
+        <div class="label">תלמידים רשומים</div>
+        <div class="value">${stats.totalUsers}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">קורסים פעילים</div>
+        <div class="value">${stats.publishedCourses}<small style="font-size:14px;color:var(--text-muted);font-weight:400"> / ${stats.totalCourses}</small></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">הזמנות ששולמו</div>
+        <div class="value">${stats.paidOrders}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">הכנסות (₪)</div>
+        <div class="value">${Number(stats.totalRevenue||0).toLocaleString('he-IL')}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">הודעות שלא נקראו</div>
+        <div class="value" style="color:${stats.unreadChats?'var(--danger)':'var(--navy)'}">${stats.unreadChats}</div>
+      </div>`;
+    // chat badge
+    const cb = document.getElementById('chatBadge');
+    if (stats.unreadChats) { cb.textContent = stats.unreadChats; cb.style.display = ''; }
+    else cb.style.display = 'none';
+  } catch (err) {
+    document.getElementById('statCards').innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`;
+    if (err.status === 401) { adminLogout(); }
+  }
+}
+
+// ==================== Catalog ====================
+async function loadCatalog() {
+  const cont = document.getElementById('coursesList');
+  cont.innerHTML = '<div class="loading-state"><div class="spinner-lg"></div></div>';
+  try {
+    allCourses = await API.adminCatalog();
+    if (!allCourses.length) {
+      cont.innerHTML = `<div class="empty-state"><h4 style="color:var(--navy);font-family:'Frank Ruhl Libre',serif;font-size:20px;margin-bottom:8px">אין קורסים עדיין</h4><p>צור קורס ראשון כדי להתחיל למכור.</p></div>`;
+      return;
+    }
+    cont.innerHTML = allCourses.map(c => `
+      <div class="list-row">
+        <div class="list-row-icon">${escapeHtml((c.title||'?').charAt(0))}</div>
+        <div class="list-row-info">
+          <strong>${escapeHtml(c.title)}</strong>
+          <small>
+            ${formatPrice(c.price)} · 
+            ${c.published ? '<span class="badge badge-green">מפורסם</span>' : '<span class="badge" style="background:var(--cream-dark);color:var(--text-muted)">טיוטה</span>'}
+            ${c.featured ? ' · <span class="badge badge-gold">מומלץ</span>' : ''}
+            ${c.free ? ' · <span class="badge badge-green">חינם</span>' : ''}
+          </small>
+        </div>
+        <div class="list-row-actions">
+          <button class="btn-icon" onclick="editCourse('${c.id}')" title="עריכה">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="btn-icon-danger" onclick="deleteCourse('${c.id}')" title="מחק">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          </button>
+        </div>
+      </div>`).join('');
+  } catch (err) {
+    cont.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function newCourse() { editCourse(null); }
+
+function editCourse(id) {
+  const c = id ? allCourses.find(x => x.id === id) : null;
+  document.getElementById('modalBox').className = 'modal wide';
+  document.getElementById('modalBox').innerHTML = `
+    <div class="modal-head">
+      <h3>${c ? 'עריכת קורס' : 'קורס חדש'}</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="cmsg"></div>
+      <div class="field"><label>שם הקורס *</label><input type="text" id="cTitle" value="${escapeHtml(c ? c.title : '')}"></div>
+      <div class="field"><label>תקציר קצר (לכרטיס)</label><textarea id="cShort" style="min-height:60px">${escapeHtml(c ? (c.shortDescription||'') : '')}</textarea></div>
+      <div class="field"><label>תיאור מלא (לדף הקורס)</label><textarea id="cDesc" style="min-height:100px">${escapeHtml(c ? (c.description||'') : '')}</textarea></div>
+      <div class="field"><label>תכונות הקורס (שורה לכל פיצ'ר)</label>
+        <textarea id="cFeatures" placeholder="גישה לכל החיים&#10;מענה אישי לשאלות&#10;תעודת סיום" style="min-height:80px">${c && c.features ? escapeHtml(c.features.join('\n')) : ''}</textarea>
+      </div>
+      <div class="field-group">
+        <div class="field"><label>תג (לדוגמה: "חדש")</label><input type="text" id="cTag" value="${escapeHtml(c ? (c.tag||'') : '')}"></div>
+        <div class="field"><label>משך (לדוגמה: "5 שעות")</label><input type="text" id="cDuration" value="${escapeHtml(c ? (c.duration||'') : '')}"></div>
+      </div>
+      <div class="field-group">
+        <div class="field"><label>מחיר ב-₪</label><input type="number" id="cPrice" value="${c ? (c.price||0) : 0}" min="0" step="1"></div>
+        <div class="field"><label>מספר שיעורים</label><input type="number" id="cLessons" value="${c ? (c.lessons||0) : 0}" min="0" step="1"></div>
+      </div>
+      <div class="field"><label>תמונת קורס (URL — אופציונלי)</label><input type="url" id="cCover" value="${escapeHtml(c ? (c.coverImage||'') : '')}" placeholder="https://..."></div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:8px;margin-bottom:14px">
+        <label style="display:flex;gap:10px;align-items:center;cursor:pointer">
+          <span class="toggle"><input type="checkbox" id="cPublished" ${c && c.published ? 'checked' : ''}><span class="toggle-slider"></span></span>
+          <span style="font-size:14px">מפורסם באתר</span>
+        </label>
+        <label style="display:flex;gap:10px;align-items:center;cursor:pointer">
+          <span class="toggle"><input type="checkbox" id="cFeatured" ${c && c.featured ? 'checked' : ''}><span class="toggle-slider"></span></span>
+          <span style="font-size:14px">סמן כמומלץ</span>
+        </label>
+        <label style="display:flex;gap:10px;align-items:center;cursor:pointer">
+          <span class="toggle"><input type="checkbox" id="cFree" ${c && c.free ? 'checked' : ''}><span class="toggle-slider"></span></span>
+          <span style="font-size:14px">קורס חינם</span>
+        </label>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="saveCourse('${c ? c.id : ''}')">${c ? 'עדכן' : 'שמור'} קורס</button>
+    </div>`;
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+async function saveCourse(id) {
+  const course = {
+    title: document.getElementById('cTitle').value.trim(),
+    shortDescription: document.getElementById('cShort').value.trim(),
+    description: document.getElementById('cDesc').value.trim(),
+    features: document.getElementById('cFeatures').value.split('\n').map(s => s.trim()).filter(Boolean),
+    tag: document.getElementById('cTag').value.trim(),
+    duration: document.getElementById('cDuration').value.trim(),
+    price: Number(document.getElementById('cPrice').value) || 0,
+    lessons: Number(document.getElementById('cLessons').value) || 0,
+    coverImage: document.getElementById('cCover').value.trim(),
+    published: document.getElementById('cPublished').checked,
+    featured: document.getElementById('cFeatured').checked,
+    free: document.getElementById('cFree').checked,
+  };
+  if (id) course.id = id;
+  if (!course.title) {
+    document.getElementById('cmsg').innerHTML = '<div class="form-error">חובה להזין שם קורס</div>';
+    return;
+  }
+  try {
+    await API.saveCourse(course);
+    closeModal();
+    loadCatalog();
+  } catch (err) {
+    document.getElementById('cmsg').innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function deleteCourse(id) {
+  const c = allCourses.find(x => x.id === id);
+  if (!confirm(`למחוק את הקורס "${c.title}"? פעולה זו תמחק גם את כל השיעורים והחומרים שלו.`)) return;
+  try {
+    await API.deleteCourse(id);
+    loadCatalog();
+  } catch (err) { alert(err.message); }
+}
+
+// ==================== Content (videos + materials per course + articles) ====================
+async function loadContent() {
+  if (!allCourses.length) {
+    try { allCourses = await API.adminCatalog(); } catch {}
+  }
+  const pills = document.getElementById('contentCoursePills');
+  if (!allCourses.length) {
+    pills.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><p>צור קורס תחילה בלשונית "קורסים".</p></div>`;
+  } else {
+    pills.innerHTML = allCourses.map(c => `
+      <button class="course-pill ${activeContentCourse===c.id?'active':''}" onclick="selectContentCourse('${c.id}')">
+        ${escapeHtml(c.title)}
+      </button>`).join('');
+  }
+  if (activeContentCourse) await renderContentEditor();
+  else document.getElementById('contentEditor').innerHTML = '';
+  loadAdminArticles();
+}
+
+window.selectContentCourse = function(id) {
+  activeContentCourse = id;
+  loadContent();
+};
+
+async function renderContentEditor() {
+  const cont = document.getElementById('contentEditor');
+  cont.innerHTML = '<div class="loading-state"><div class="spinner-lg"></div></div>';
+  const c = allCourses.find(x => x.id === activeContentCourse);
+  try {
+    const [videos, materials] = await Promise.all([
+      API.adminVideos(activeContentCourse),
+      API.adminMaterials(activeContentCourse),
+    ]);
+    cont.innerHTML = `
+      <div class="section-card">
+        <h4 style="margin-bottom:6px">${escapeHtml(c.title)}</h4>
+        <p class="text-muted" style="margin-bottom:14px">ניהול שיעורי וידאו וחומרים נלווים</p>
+      </div>
+      <div class="section-card">
+        <h4 style="margin-bottom:14px">🎥 שיעורי וידאו</h4>
+        <div class="field"><label>כותרת השיעור</label><input type="text" id="vTitle"></div>
+        <div class="field"><label>קישור (YouTube/Vimeo/MP4)</label><input type="url" id="vUrl" placeholder="https://www.youtube.com/watch?v=..."></div>
+        <div class="field"><label>תיאור (אופציונלי)</label><textarea id="vDesc"></textarea></div>
+        <button class="btn btn-primary" onclick="addVideo()">+ הוסף שיעור</button>
+        <div id="vMsg"></div>
+        <div style="margin-top:14px">
+          ${videos.length ? videos.map((v, i) => `
+            <div class="list-row">
+              <div class="list-row-icon">${i+1}</div>
+              <div class="list-row-info">
+                <strong>${escapeHtml(v.title)}</strong>
+                <small>${escapeHtml(v.url)}</small>
+              </div>
+              <div class="list-row-actions">
+                <button class="btn-icon-danger" onclick="deleteVideo('${v.id}')">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6"/></svg>
+                </button>
+              </div>
+            </div>
+          `).join('') : '<p class="text-muted">אין שיעורים עדיין</p>'}
+        </div>
+      </div>
+      <div class="section-card">
+        <h4 style="margin-bottom:14px">📄 חומרים נלווים (PDF/קבצים)</h4>
+        <div class="field"><label>כותרת החומר</label><input type="text" id="mTitle" placeholder="חוברת תרגול - שיעור 1"></div>
+        <div class="field"><label>קישור הקובץ</label><input type="url" id="mUrl" placeholder="https://drive.google.com/..."></div>
+        <div class="field"><label>סוג קובץ</label>
+          <select id="mType">
+            <option value="pdf">PDF</option>
+            <option value="doc">Word</option>
+            <option value="audio">אודיו</option>
+            <option value="link">קישור</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="addMaterial()">+ הוסף חומר</button>
+        <div style="margin-top:14px">
+          ${materials.length ? materials.map(m => `
+            <div class="list-row">
+              <div class="list-row-icon">📎</div>
+              <div class="list-row-info">
+                <strong>${escapeHtml(m.title)}</strong>
+                <small>${escapeHtml(m.fileType.toUpperCase())} · ${escapeHtml(m.url)}</small>
+              </div>
+              <div class="list-row-actions">
+                <button class="btn-icon-danger" onclick="deleteMaterial('${m.id}')">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6"/></svg>
+                </button>
+              </div>
+            </div>
+          `).join('') : '<p class="text-muted">אין חומרים עדיין</p>'}
+        </div>
+      </div>`;
+  } catch (err) {
+    cont.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+window.addVideo = async function() {
+  const title = document.getElementById('vTitle').value.trim();
+  const url = document.getElementById('vUrl').value.trim();
+  const description = document.getElementById('vDesc').value.trim();
+  if (!title || !url) { document.getElementById('vMsg').innerHTML = '<div class="form-error">חובה למלא כותרת וקישור</div>'; return; }
+  try {
+    await API.addVideo(activeContentCourse, { title, url, description });
+    renderContentEditor();
+  } catch (err) { document.getElementById('vMsg').innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+};
+
+window.deleteVideo = async function(videoId) {
+  if (!confirm('למחוק שיעור זה?')) return;
+  try { await API.deleteVideo(activeContentCourse, videoId); renderContentEditor(); } catch (err) { alert(err.message); }
+};
+
+window.addMaterial = async function() {
+  const title = document.getElementById('mTitle').value.trim();
+  const url = document.getElementById('mUrl').value.trim();
+  const fileType = document.getElementById('mType').value;
+  if (!title || !url) { alert('חובה למלא כותרת וקישור'); return; }
+  try { await API.addMaterial(activeContentCourse, { title, url, fileType }); renderContentEditor(); } catch (err) { alert(err.message); }
+};
+
+window.deleteMaterial = async function(matId) {
+  if (!confirm('למחוק חומר זה?')) return;
+  try { await API.deleteMaterial(activeContentCourse, matId); renderContentEditor(); } catch (err) { alert(err.message); }
+};
+
+async function loadAdminArticles() {
+  const cont = document.getElementById('articlesAdminList');
+  try {
+    const articles = await API.articles();
+    if (!articles.length) { cont.innerHTML = ''; return; }
+    cont.innerHTML = articles.map(a => `
+      <div class="list-row">
+        <div class="list-row-icon">${a.category === 'opinion' ? '✦' : '✓'}</div>
+        <div class="list-row-info">
+          <strong>${escapeHtml(a.title)}</strong>
+          <small>${a.category === 'opinion' ? 'דעה' : 'יסוד'} · ${new Date(a.date).toLocaleDateString('he-IL')}</small>
+        </div>
+        <div class="list-row-actions">
+          <button class="btn-icon-danger" onclick="deleteArticle('${a.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6"/></svg>
+          </button>
+        </div>
+      </div>`).join('');
+  } catch (err) { cont.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+}
+
+async function addArticle() {
+  const title = document.getElementById('artTitle').value.trim();
+  const content = document.getElementById('artContent').value.trim();
+  const category = document.getElementById('artCategory').value;
+  const msg = document.getElementById('artMsg');
+  if (!title || !content) { msg.innerHTML = '<div class="form-error">חובה למלא כותרת ותוכן</div>'; return; }
+  try {
+    await API.addArticle({ title, content, category });
+    document.getElementById('artTitle').value = '';
+    document.getElementById('artContent').value = '';
+    msg.innerHTML = '<div class="form-success">פורסם בהצלחה!</div>';
+    setTimeout(() => msg.innerHTML = '', 2500);
+    loadAdminArticles();
+  } catch (err) { msg.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+}
+
+window.deleteArticle = async function(id) {
+  if (!confirm('למחוק מאמר זה?')) return;
+  try { await API.deleteArticle(id); loadAdminArticles(); } catch (err) { alert(err.message); }
+};
+
+// ==================== Users ====================
+async function loadUsers() {
+  const cont = document.getElementById('usersList');
+  cont.innerHTML = '<div class="loading-state"><div class="spinner-lg"></div></div>';
+  try {
+    if (!allCourses.length) { try { allCourses = await API.adminCatalog(); } catch {} }
+    allUsers = await API.adminUsers();
+    if (!allUsers.length) {
+      cont.innerHTML = '<div class="empty-state"><p>אין תלמידים רשומים. תלמידים מתווספים אוטומטית בעת רכישת קורס.</p></div>';
+      return;
+    }
+    cont.innerHTML = allUsers.map(u => {
+      const courseTitles = (u.courseAccess || []).map(id => {
+        const c = allCourses.find(x => x.id === id);
+        return c ? c.title : id;
+      });
+      return `
+        <div class="list-row">
+          <div class="list-row-icon" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--navy)">${escapeHtml((u.fullName||'?').charAt(0))}</div>
+          <div class="list-row-info">
+            <strong>${escapeHtml(u.fullName)}</strong>
+            <small>${escapeHtml(u.email)}${u.phone?' · ' + escapeHtml(u.phone):''}<br>
+            <span style="color:var(--gold-dark)">${courseTitles.length} קורסים: ${escapeHtml(courseTitles.slice(0,2).join(', '))}${courseTitles.length>2?' +' + (courseTitles.length-2):''}</span></small>
+          </div>
+          <div class="list-row-actions">
+            <button class="btn-icon" onclick="editUser('${u.id}')" title="עריכה">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn-icon-danger" onclick="deleteUser('${u.id}')" title="מחק">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6"/></svg>
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (err) { cont.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+}
+
+function newUser() { editUser(null); }
+
+function editUser(id) {
+  const u = id ? allUsers.find(x => x.id === id) : null;
+  const isNew = !u;
+  document.getElementById('modalBox').className = 'modal wide';
+  document.getElementById('modalBox').innerHTML = `
+    <div class="modal-head">
+      <h3>${isNew ? 'הוספת תלמיד חדש' : 'עריכת תלמיד'}</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="umsg"></div>
+      <div class="field-group">
+        <div class="field"><label>שם מלא *</label><input type="text" id="uName" value="${escapeHtml(u ? u.fullName : '')}"></div>
+        <div class="field"><label>אימייל *</label><input type="email" id="uEmail" value="${escapeHtml(u ? u.email : '')}" ${u?'readonly':''}></div>
+      </div>
+      <div class="field"><label>טלפון</label><input type="tel" id="uPhone" value="${escapeHtml(u ? (u.phone||'') : '')}"></div>
+      
+      <h4 style="margin:18px 0 10px;font-size:15px;color:var(--navy)">גישה לקורסים</h4>
+      <div id="uCourses">
+        ${allCourses.map(c => {
+          const checked = u && (u.courseAccess||[]).includes(c.id);
+          return `
+            <label class="checkbox-card ${checked?'checked':''}">
+              <input type="checkbox" value="${c.id}" ${checked?'checked':''} onchange="this.parentElement.classList.toggle('checked',this.checked)">
+              <span>${escapeHtml(c.title)} <small style="color:var(--text-muted)">${formatPrice(c.price)}</small></span>
+            </label>`;
+        }).join('') || '<p class="text-muted">אין קורסים. צור קורס תחילה.</p>'}
+      </div>
+      
+      ${!isNew ? `
+        <div style="display:flex;gap:14px;align-items:center;margin:18px 0;flex-wrap:wrap">
+          <label style="display:flex;gap:10px;align-items:center;cursor:pointer">
+            <span class="toggle"><input type="checkbox" id="uReset"><span class="toggle-slider"></span></span>
+            <span style="font-size:14px">איפוס סיסמה (יווצר קוד חדש)</span>
+          </label>
+        </div>
+      ` : ''}
+      <label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin-bottom:18px">
+        <span class="toggle"><input type="checkbox" id="uSendMail" ${isNew?'checked':''}><span class="toggle-slider"></span></span>
+        <span style="font-size:14px">שלח מייל ${isNew?'ברוכים הבאים':'עם הסיסמה החדשה'}</span>
+      </label>
+      
+      <button class="btn btn-primary btn-block" onclick="saveUser('${u ? u.id : ''}')">${isNew ? 'הוסף תלמיד' : 'עדכן'}</button>
+    </div>`;
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+async function saveUser(id) {
+  const isNew = !id;
+  const fullName = document.getElementById('uName').value.trim();
+  const email = document.getElementById('uEmail').value.trim();
+  const phone = document.getElementById('uPhone').value.trim();
+  const courseIds = [...document.querySelectorAll('#uCourses input:checked')].map(i => i.value);
+  const sendWelcomeEmail = document.getElementById('uSendMail').checked;
+  const resetPassword = !isNew && document.getElementById('uReset').checked;
+  const msg = document.getElementById('umsg');
+  if (!fullName || !email) { msg.innerHTML = '<div class="form-error">שם ואימייל הם חובה</div>'; return; }
+  try {
+    const loginUrl = window.location.origin + '/login.html';
+    if (isNew) {
+      const r = await API.addUser({ fullName, email, phone, courseIds, sendWelcomeEmail, loginUrl });
+      msg.innerHTML = r.password 
+        ? `<div class="form-success">נוצר תלמיד חדש. סיסמה: <strong>${escapeHtml(r.password)}</strong></div>`
+        : `<div class="form-success">התלמיד עודכן בהצלחה.</div>`;
+    } else {
+      const r = await API.updateUser(id, { fullName, phone, courseIds, sendWelcomeEmail, resetPassword, loginUrl });
+      msg.innerHTML = r.password 
+        ? `<div class="form-success">עודכן. סיסמה חדשה: <strong>${escapeHtml(r.password)}</strong></div>`
+        : `<div class="form-success">התלמיד עודכן.</div>`;
+    }
+    setTimeout(() => { closeModal(); loadUsers(); }, 1500);
+  } catch (err) { msg.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+}
+
+window.deleteUser = async function(id) {
+  const u = allUsers.find(x => x.id === id);
+  if (!confirm(`למחוק את ${u.fullName}? זה ימחק גם את ההתקדמות וההודעות שלו.`)) return;
+  try { await API.deleteUser(id); loadUsers(); } catch (err) { alert(err.message); }
+};
+
+// ==================== Orders ====================
+async function loadOrders() {
+  const cont = document.getElementById('ordersList');
+  cont.innerHTML = '<div class="loading-state"><div class="spinner-lg"></div></div>';
+  try {
+    const orders = await API.adminOrders();
+    if (!orders.length) {
+      cont.innerHTML = '<div class="empty-state"><p>אין הזמנות עדיין.</p></div>';
+      return;
+    }
+    cont.innerHTML = orders.map(o => {
+      const date = new Date(o.createdAt).toLocaleString('he-IL', {day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      const statusBadge = o.status === 'paid' 
+        ? '<span class="badge badge-green">שולם</span>' 
+        : '<span class="badge badge-red">ממתין לתשלום</span>';
+      return `
+        <div class="list-row">
+          <div class="list-row-icon">${o.status === 'paid' ? '✓' : '⏱'}</div>
+          <div class="list-row-info">
+            <strong>${escapeHtml(o.fullName)} · ${escapeHtml(o.courseTitle)}</strong>
+            <small>${escapeHtml(o.email)} · ${formatPrice(o.amount)} · ${date} · ${statusBadge}</small>
+          </div>
+          <div class="list-row-actions">
+            ${o.status !== 'paid' ? `<button class="btn btn-gold btn-sm" onclick="activateOrder('${o.id}')">הפעל ידנית</button>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  } catch (err) { cont.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+}
+
+window.activateOrder = async function(id) {
+  if (!confirm('להפעיל את ההזמנה ידנית? יישלח מייל ללקוח עם פרטי גישה.')) return;
+  try {
+    const loginUrl = window.location.origin + '/login.html';
+    await API.activateOrder(id, loginUrl);
+    loadOrders();
+  } catch (err) { alert(err.message); }
+};
+
+// ==================== Chats ====================
+async function loadChats() {
+  const cont = document.getElementById('chatsContainer');
+  cont.innerHTML = '<div class="loading-state"><div class="spinner-lg"></div></div>';
+  try {
+    const threads = await API.adminChats();
+    if (!threads.length) {
+      cont.innerHTML = '<div class="empty-state"><p>אין הודעות מתלמידים עדיין.</p></div>';
+      return;
+    }
+    cont.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr;gap:18px" id="chatsGrid">
+        <div>
+          ${threads.map(t => `
+            <div class="chat-list-item ${t.unread?'unread':''}" onclick="openChatThread('${t.userId}')">
+              <div class="chat-list-icon">${escapeHtml((t.fullName||'?').charAt(0))}</div>
+              <div class="chat-list-info">
+                <strong>${escapeHtml(t.fullName)} ${t.unread?`<span class="chat-list-unread">${t.unread}</span>`:''}</strong>
+                <p>${escapeHtml(t.lastMessage)}</p>
+              </div>
+              <div class="chat-list-time">${new Date(t.lastTime).toLocaleString('he-IL', {day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div id="chatThreadView"></div>
+      </div>`;
+  } catch (err) { cont.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+}
+
+window.openChatThread = async function(userId) {
+  activeChatUser = userId;
+  const cont = document.getElementById('chatThreadView');
+  cont.innerHTML = '<div class="loading-state"><div class="spinner-lg"></div></div>';
+  try {
+    const messages = await API.adminChat(userId);
+    const u = allUsers.find(x => x.id === userId);
+    cont.innerHTML = `
+      <div class="chat-shell">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <strong>${escapeHtml(u ? u.fullName : userId)}</strong>
+          <button class="btn btn-ghost btn-sm" onclick="loadChats();activeChatUser=null">סגור</button>
+        </div>
+        <div class="chat-messages" id="adminChatMsgs"></div>
+        <div class="chat-input">
+          <input type="text" id="adminChatInput" placeholder="כתוב תשובה...">
+          <button onclick="sendAdminReply()" id="adminChatBtn">שלח</button>
+        </div>
+      </div>`;
+    renderAdminChat(messages);
+    document.getElementById('adminChatInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') sendAdminReply();
+    });
+    if (chatPollTimer) clearInterval(chatPollTimer);
+    chatPollTimer = setInterval(async () => {
+      if (!activeChatUser) return;
+      try { renderAdminChat(await API.adminChat(activeChatUser)); } catch {}
+    }, 8000);
+  } catch (err) { cont.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+};
+
+function renderAdminChat(messages) {
+  const el = document.getElementById('adminChatMsgs');
+  if (!el) return;
+  el.innerHTML = messages.map(m => {
+    const from = m.from === 'admin' ? 'from-admin' : 'from-student';
+    const t = new Date(m.time).toLocaleString('he-IL', {day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
+    return `<div class="chat-msg ${from}">${escapeHtml(m.text)}<time>${t}</time></div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+window.sendAdminReply = async function() {
+  if (!activeChatUser) return;
+  const inp = document.getElementById('adminChatInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  const btn = document.getElementById('adminChatBtn');
+  btn.disabled = true;
+  inp.disabled = true;
+  try {
+    await API.replyChat(activeChatUser, text);
+    inp.value = '';
+    renderAdminChat(await API.adminChat(activeChatUser));
+  } catch (err) { alert(err.message); }
+  finally { btn.disabled = false; inp.disabled = false; inp.focus(); }
+};
+
+// ==================== Settings ====================
+async function loadSettings() {
+  try {
+    const cfg = await API.adminConfig();
+    if (cfg.icount.configured) {
+      document.getElementById('icCid').value = cfg.icount.companyId || '';
+      document.getElementById('icUser').value = cfg.icount.user || '';
+      document.getElementById('icPass').placeholder = '**** (מוגדר)';
+    }
+    if (cfg.resend.configured) {
+      document.getElementById('resendFrom').value = cfg.resend.from || '';
+      document.getElementById('resendKey').placeholder = '**** (מוגדר)';
+    }
+  } catch (err) { console.warn(err); }
+}
+
+window.saveResend = async function() {
+  const apiKey = document.getElementById('resendKey').value.trim();
+  const from = document.getElementById('resendFrom').value.trim();
+  const msg = document.getElementById('resendMsg');
+  msg.innerHTML = '';
+  try {
+    const data = { resend: { from } };
+    if (apiKey) data.resend.apiKey = apiKey;
+    await API.saveConfig(data);
+    msg.innerHTML = '<div class="form-success">הגדרות מייל נשמרו</div>';
+    setTimeout(() => msg.innerHTML = '', 2500);
+  } catch (err) { msg.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+};
+
+window.testEmail = async function() {
+  const to = prompt('לאיזו כתובת לשלוח מייל בדיקה?');
+  if (!to) return;
+  const msg = document.getElementById('resendMsg');
+  try {
+    const r = await API.testEmail(to);
+    msg.innerHTML = r.ok 
+      ? '<div class="form-success">המייל נשלח! בדוק את התיבה (וגם את הספאם)</div>'
+      : `<div class="form-error">${escapeHtml(r.reason || 'שליחה נכשלה')}</div>`;
+  } catch (err) { msg.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+};
+
+window.saveIcount = async function() {
+  const companyId = document.getElementById('icCid').value.trim();
+  const user = document.getElementById('icUser').value.trim();
+  const password = document.getElementById('icPass').value;
+  const msg = document.getElementById('icountMsg');
+  msg.innerHTML = '';
+  try {
+    const data = { icount: { companyId, user } };
+    if (password) data.icount.password = password;
+    await API.saveConfig(data);
+    msg.innerHTML = '<div class="form-success">הגדרות התשלום נשמרו</div>';
+    setTimeout(() => msg.innerHTML = '', 2500);
+  } catch (err) { msg.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+};
+
+window.changeAdminPassword = async function() {
+  const oldP = document.getElementById('oldAdPwd').value;
+  const newP = document.getElementById('newAdPwd').value;
+  const newP2 = document.getElementById('newAdPwd2').value;
+  const msg = document.getElementById('adminPwdMsg');
+  msg.innerHTML = '';
+  if (!oldP || !newP) { msg.innerHTML = '<div class="form-error">נא למלא את כל השדות</div>'; return; }
+  if (newP.length < 6) { msg.innerHTML = '<div class="form-error">הסיסמה חייבת להיות באורך 6 תווים לפחות</div>'; return; }
+  if (newP !== newP2) { msg.innerHTML = '<div class="form-error">אישור הסיסמה אינו תואם</div>'; return; }
+  try {
+    await API.changeAdminPassword(oldP, newP);
+    msg.innerHTML = '<div class="form-success">הסיסמה עודכנה</div>';
+    document.getElementById('oldAdPwd').value = '';
+    document.getElementById('newAdPwd').value = '';
+    document.getElementById('newAdPwd2').value = '';
+  } catch (err) { msg.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+};
+
+window.closeModal = function() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+};
+</script>
+</body>
+</html>

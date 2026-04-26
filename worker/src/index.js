@@ -1,35 +1,59 @@
 /**
- * doron-api — Cloudflare Worker
- * ------------------------------
- * API לאתר של דורון: אימות, ניהול סרטונים וניהול מאמרים.
- * כל הנתונים נשמרים ב-KV (binding: KV).
+ * doron-api — Cloudflare Worker (LMS edition)
+ * ============================================
+ * Single KV binding: KV
  *
- * Endpoints:
- *   GET    /api/content/videos               — פומבי
- *   GET    /api/content/articles             — פומבי
- *   POST   /api/auth/login                   — { user, password } → { token }
- *   POST   /api/auth/change-password         — { oldPassword, newPassword } (אוטנטיקציה)
- *   POST   /api/content/videos               — { courseId, video } (אוטנטיקציה)
- *   DELETE /api/content/videos/:course/:id   — (אוטנטיקציה)
- *   POST   /api/content/articles             — { article } (אוטנטיקציה)
- *   DELETE /api/content/articles/:id         — (אוטנטיקציה)
+ * Key schema:
+ *   auth:doron                          → admin credentials  { user, hash }
+ *   session:<token>                     → admin session
+ *   user_session:<token>                → student session
+ *   courses:catalog                     → published+draft courses array
+ *   videos:<courseId>                   → videos for a course
+ *   articles:list                       → articles array
+ *   materials:<courseId>                → downloadable PDFs/files
+ *   user:<userId>                       → student record
+ *   user_email:<email>                  → email→userId index
+ *   user_progress:<userId>              → { [courseId_videoId]: timestamp }
+ *   chat:<userId>                       → message thread
+ *   order:<orderId>                     → order record
+ *   icount_config                       → iCount API credentials
+ *   resend_config                       → Resend API key + from email
+ *   site_config                         → general site config
  */
 
 const DEFAULT_USER = "doron";
 const DEFAULT_PASS = "12345678";
-const SESSION_TTL = 60 * 60 * 24 * 30; // 30 days
+const SESSION_TTL = 60 * 60 * 24 * 30;
 
-// ——— Helpers ———
 async function sha256(str) {
   const buf = new TextEncoder().encode(str);
   const hash = await crypto.subtle.digest("SHA-256", buf);
   return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-function randomToken() {
+function rid(prefix = "") {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return prefix + [...bytes].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function token() {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   return [...bytes].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function genPassword() {
+  const cons = "bcdfghjkmnpqrstvwxyz";
+  const vow = "aeiou";
+  const dig = "23456789";
+  let pw = "";
+  for (let i = 0; i < 3; i++) {
+    pw += cons[Math.floor(Math.random() * cons.length)];
+    pw += vow[Math.floor(Math.random() * vow.length)];
+  }
+  pw += dig[Math.floor(Math.random() * dig.length)] + dig[Math.floor(Math.random() * dig.length)];
+  return pw;
 }
 
 function corsHeaders(request, env) {
@@ -38,47 +62,144 @@ function corsHeaders(request, env) {
   const allow = allowed.includes("*") ? "*" : (allowed.includes(origin) ? origin : allowed[0]);
   return {
     "Access-Control-Allow-Origin": allow,
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
   };
 }
 
-function json(data, init = {}, extraHeaders = {}) {
+function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
-    status: init.status || 200,
-    headers: { "Content-Type": "application/json; charset=utf-8", ...extraHeaders },
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8" },
   });
 }
 
-async function ensureDefaultAuth(env) {
+async function ensureDefaults(env) {
   const existing = await env.KV.get("auth:doron");
   if (!existing) {
     const hash = await sha256(DEFAULT_PASS);
     await env.KV.put("auth:doron", JSON.stringify({ user: DEFAULT_USER, hash }));
   }
+  const cfg = await env.KV.get("site_config");
+  if (!cfg) {
+    await env.KV.put("site_config", JSON.stringify({ currency: "₪", brandName: "דורון" }));
+  }
 }
 
-async function requireAuth(request, env) {
-  const header = request.headers.get("Authorization") || "";
-  const token = header.replace(/^Bearer\s+/i, "").trim();
-  if (!token) return null;
-  const raw = await env.KV.get(`session:${token}`);
+async function requireAdmin(request, env) {
+  const t = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  if (!t) return null;
+  const raw = await env.KV.get(`session:${t}`);
   if (!raw) return null;
-  try { return JSON.parse(raw); } catch { return null; }
+  try { return { ...JSON.parse(raw), token: t }; } catch { return null; }
 }
 
-// ——— Main handler ———
+async function requireUser(request, env) {
+  const t = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  if (!t) return null;
+  const adminRaw = await env.KV.get(`session:${t}`);
+  if (adminRaw) { try { return { ...JSON.parse(adminRaw), token: t, role: "admin" }; } catch {} }
+  const studentRaw = await env.KV.get(`user_session:${t}`);
+  if (studentRaw) { try { return { ...JSON.parse(studentRaw), token: t, role: "student" }; } catch {} }
+  return null;
+}
+
+async function sendEmail(env, to, subject, html) {
+  const cfgRaw = await env.KV.get("resend_config");
+  if (!cfgRaw) return { ok: false, reason: "Resend לא הוגדר" };
+  const cfg = JSON.parse(cfgRaw);
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${cfg.apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: cfg.from || "דורון <onboarding@resend.dev>",
+      to: [to],
+      subject,
+      html,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return { ok: false, reason: data.message || "שליחת מייל נכשלה" };
+  return { ok: true, id: data.id };
+}
+
+function welcomeEmail(fullName, email, password, courseTitle, loginUrl) {
+  return `<!doctype html><html lang="he" dir="rtl"><body style="font-family:Arial,sans-serif;background:#FAF7F2;padding:30px;color:#1a1a1a"><div style="max-width:560px;margin:0 auto;background:white;border-radius:14px;padding:32px;box-shadow:0 4px 14px rgba(0,0,0,.06)"><h1 style="color:#14213D;font-family:Georgia,serif;margin:0 0 8px">ברוך הבא, ${fullName}!</h1><p style="color:#A68940;font-weight:600;letter-spacing:.1em;font-size:13px;margin:0 0 24px">דורון · אימון חיים באמונה</p><p style="font-size:16px;line-height:1.7">תודה על הרכישה של <strong>${courseTitle}</strong>. אני ממש שמח שהצטרפת.</p><div style="background:#FAF7F2;border:1px solid #EBE2D3;border-radius:10px;padding:20px;margin:22px 0"><h3 style="margin:0 0 10px;color:#14213D;font-family:Georgia,serif">פרטי הגישה שלך</h3><p style="margin:6px 0;font-size:15px"><strong>שם משתמש:</strong> ${email}</p><p style="margin:6px 0;font-size:15px"><strong>סיסמה:</strong> <code style="background:white;padding:4px 10px;border-radius:6px;font-family:monospace;font-size:16px;color:#14213D">${password}</code></p></div><p style="font-size:15px;line-height:1.7">היכנס לאזור האישי שלך, צפה בסרטוני הקורס, עקוב אחר ההתקדמות, ושלח לי שאלות בכל זמן:</p><div style="text-align:center;margin:28px 0"><a href="${loginUrl}" style="background:#14213D;color:#F5EFE6;text-decoration:none;padding:14px 32px;border-radius:100px;font-weight:600;display:inline-block">כניסה לאזור האישי</a></div><p style="font-size:14px;color:#888;line-height:1.7">מומלץ לשנות את הסיסמה לאחר הכניסה הראשונה. אם יש לך שאלות, אני זמין דרך המערכת.</p><hr style="border:none;border-top:1px solid #EBE2D3;margin:28px 0"><p style="font-size:13px;color:#888;text-align:center">דורון · אימון חיים באמונה</p></div></body></html>`;
+}
+
+async function createOrUpdateUser(env, { fullName, email, phone, courseIds }) {
+  const lc = email.toLowerCase();
+  let userId = await env.KV.get(`user_email:${lc}`);
+  let password = null;
+  let user;
+  if (userId) {
+    const raw = await env.KV.get(`user:${userId}`);
+    user = raw ? JSON.parse(raw) : null;
+  }
+  if (!user) {
+    userId = rid("u_");
+    password = genPassword();
+    user = { email: lc, fullName, phone: phone || "", hash: await sha256(password), courseAccess: [], createdAt: Date.now() };
+    await env.KV.put(`user_email:${lc}`, userId);
+  }
+  if (fullName) user.fullName = fullName;
+  if (phone !== undefined) user.phone = phone;
+  user.courseAccess = [...new Set([...(user.courseAccess || []), ...(courseIds || [])])];
+  await env.KV.put(`user:${userId}`, JSON.stringify(user));
+  return { userId, email: lc, fullName: user.fullName, password };
+}
+
+async function activateOrder(env, orderId, loginUrl) {
+  const raw = await env.KV.get(`order:${orderId}`);
+  if (!raw) throw new Error("הזמנה לא נמצאה");
+  const order = JSON.parse(raw);
+  if (order.status === "paid") return { alreadyActivated: true, order };
+  order.status = "paid";
+  order.paidAt = Date.now();
+  const u = await createOrUpdateUser(env, {
+    fullName: order.fullName, email: order.email, phone: order.phone, courseIds: [order.courseId],
+  });
+  order.userId = u.userId;
+  await env.KV.put(`order:${orderId}`, JSON.stringify(order));
+  let emailResult = null;
+  if (u.password) {
+    emailResult = await sendEmail(env, u.email, "ברוך הבא לקורס - דורון",
+      welcomeEmail(u.fullName, u.email, u.password, order.courseTitle, loginUrl || "https://doron-site.pages.dev"));
+  } else {
+    emailResult = await sendEmail(env, u.email, "קורס חדש נוסף לחשבון שלך",
+      `<div style="font-family:Arial,sans-serif;padding:20px"><p>שלום ${u.fullName},</p><p>הקורס <strong>${order.courseTitle}</strong> נוסף לאזור האישי שלך.</p><p><a href="${loginUrl || 'https://doron-site.pages.dev'}">היכנס לאזור האישי</a></p></div>`);
+  }
+  return { order, user: u, emailResult };
+}
+
+async function buildIcountPayLink(env, order, returnUrl) {
+  const cfgRaw = await env.KV.get("icount_config");
+  if (!cfgRaw) throw new Error("iCount לא הוגדר. הוסף פרטי גישה בפאנל הניהול → הגדרות.");
+  const cfg = JSON.parse(cfgRaw);
+  // iCount hosted-checkout (paypage) — opens a payment page hosted by iCount
+  const params = new URLSearchParams({
+    cid: cfg.companyId,
+    user: cfg.user,
+    pass: cfg.password,
+    sum: String(order.amount),
+    currency_code: "ILS",
+    description: order.courseTitle,
+    custom_info: order.id,
+    email: order.email,
+    full_name: order.fullName,
+    phone: order.phone || "",
+    success_url: returnUrl,
+  });
+  return `https://api.icount.co.il/api/v3.php/?${params.toString()}`;
+}
+
 export default {
   async fetch(request, env) {
     const cors = corsHeaders(request, env);
-
-    // CORS preflight
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: cors });
-    }
-
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+    
     const wrap = (resp) => {
       const h = new Headers(resp.headers);
       for (const [k, v] of Object.entries(cors)) h.set(k, v);
@@ -86,156 +207,634 @@ export default {
     };
 
     try {
-      await ensureDefaultAuth(env);
+      await ensureDefaults(env);
       const url = new URL(request.url);
       const path = url.pathname;
       const method = request.method;
 
-      // ——— Health check ———
-      if (path === "/" || path === "/api" || path === "/api/health") {
+      // ============ PUBLIC ============
+
+      if (path === "/" || path === "/api/health") {
         return wrap(json({ ok: true, service: "doron-api", time: Date.now() }));
       }
 
-      // ——— Public: videos list ———
-      if (path === "/api/content/videos" && method === "GET") {
-        const raw = await env.KV.get("content:videos");
-        return wrap(json(raw ? JSON.parse(raw) : {}));
+      if (path === "/api/catalog" && method === "GET") {
+        const raw = await env.KV.get("courses:catalog");
+        const list = raw ? JSON.parse(raw) : [];
+        return wrap(json(list.filter(c => c.published)));
       }
 
-      // ——— Public: articles list ———
       if (path === "/api/content/articles" && method === "GET") {
-        const raw = await env.KV.get("content:articles");
+        const raw = await env.KV.get("articles:list");
         return wrap(json(raw ? JSON.parse(raw) : []));
       }
 
-      // ——— Login ———
-      if (path === "/api/auth/login" && method === "POST") {
-        const body = await request.json().catch(() => ({}));
-        const { user, password } = body;
-        if (!user || !password) {
-          return wrap(json({ error: "חסרים פרטי התחברות" }, { status: 400 }));
+      const videosMatch = path.match(/^\/api\/content\/videos\/([^\/]+)$/);
+      if (videosMatch && method === "GET") {
+        const courseId = videosMatch[1];
+        const u = await requireUser(request, env);
+        const catRaw = await env.KV.get("courses:catalog");
+        const catalog = catRaw ? JSON.parse(catRaw) : [];
+        const course = catalog.find(c => c.id === courseId);
+        if (!course) return wrap(json({ error: "קורס לא נמצא" }, 404));
+        let hasAccess = course.free || course.price === 0;
+        if (u && u.role === "admin") hasAccess = true;
+        if (u && u.role === "student") {
+          const ur = await env.KV.get(`user:${u.userId}`);
+          if (ur) {
+            const ud = JSON.parse(ur);
+            if ((ud.courseAccess || []).includes(courseId)) hasAccess = true;
+          }
         }
-        const authRaw = await env.KV.get("auth:doron");
-        const auth = authRaw ? JSON.parse(authRaw) : null;
-        if (!auth || auth.user !== user) {
-          return wrap(json({ error: "שם משתמש או סיסמה שגויים" }, { status: 401 }));
-        }
-        const hash = await sha256(password);
-        if (hash !== auth.hash) {
-          return wrap(json({ error: "שם משתמש או סיסמה שגויים" }, { status: 401 }));
-        }
-        const token = randomToken();
-        await env.KV.put(
-          `session:${token}`,
-          JSON.stringify({ user, created: Date.now() }),
-          { expirationTtl: SESSION_TTL }
-        );
-        return wrap(json({ token, user }));
+        if (!hasAccess) return wrap(json({ error: "אין לך גישה לקורס זה", needPurchase: true, course }, 403));
+        const raw = await env.KV.get(`videos:${courseId}`);
+        return wrap(json(raw ? JSON.parse(raw) : []));
       }
 
-      // ——— All endpoints below require auth ———
-      const session = await requireAuth(request, env);
-      if (!session) {
-        return wrap(json({ error: "לא מחובר" }, { status: 401 }));
+      // Single course detail (public)
+      const courseDetMatch = path.match(/^\/api\/catalog\/([^\/]+)$/);
+      if (courseDetMatch && method === "GET") {
+        const raw = await env.KV.get("courses:catalog");
+        const list = raw ? JSON.parse(raw) : [];
+        const c = list.find(c => c.id === courseDetMatch[1] && c.published);
+        if (!c) return wrap(json({ error: "קורס לא נמצא" }, 404));
+        // include video count for the course detail page
+        const vRaw = await env.KV.get(`videos:${c.id}`);
+        const vids = vRaw ? JSON.parse(vRaw) : [];
+        return wrap(json({ ...c, videoCount: vids.length }));
       }
 
-      // ——— Logout ———
+      // ============ AUTH ============
+
+      if (path === "/api/auth/admin-login" && method === "POST") {
+        const { user, password } = await request.json().catch(() => ({}));
+        if (!user || !password) return wrap(json({ error: "חסרים פרטים" }, 400));
+        const raw = await env.KV.get("auth:doron");
+        const auth = raw ? JSON.parse(raw) : null;
+        if (!auth || auth.user !== user) return wrap(json({ error: "פרטי התחברות שגויים" }, 401));
+        if ((await sha256(password)) !== auth.hash) return wrap(json({ error: "פרטי התחברות שגויים" }, 401));
+        const t = token();
+        await env.KV.put(`session:${t}`, JSON.stringify({ user, role: "admin", created: Date.now() }), { expirationTtl: SESSION_TTL });
+        return wrap(json({ token: t, role: "admin", user }));
+      }
+
+      if (path === "/api/auth/student-login" && method === "POST") {
+        const { email, password } = await request.json().catch(() => ({}));
+        if (!email || !password) return wrap(json({ error: "חסרים פרטים" }, 400));
+        const userId = await env.KV.get(`user_email:${email.toLowerCase()}`);
+        if (!userId) return wrap(json({ error: "פרטי התחברות שגויים" }, 401));
+        const raw = await env.KV.get(`user:${userId}`);
+        if (!raw) return wrap(json({ error: "פרטי התחברות שגויים" }, 401));
+        const u = JSON.parse(raw);
+        if ((await sha256(password)) !== u.hash) return wrap(json({ error: "פרטי התחברות שגויים" }, 401));
+        const t = token();
+        await env.KV.put(`user_session:${t}`, JSON.stringify({ userId, role: "student", created: Date.now() }), { expirationTtl: SESSION_TTL });
+        return wrap(json({ token: t, role: "student", user: { id: userId, email: u.email, fullName: u.fullName } }));
+      }
+
       if (path === "/api/auth/logout" && method === "POST") {
-        const header = request.headers.get("Authorization") || "";
-        const token = header.replace(/^Bearer\s+/i, "").trim();
-        if (token) await env.KV.delete(`session:${token}`);
+        const t = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
+        if (t) { await env.KV.delete(`session:${t}`); await env.KV.delete(`user_session:${t}`); }
         return wrap(json({ ok: true }));
       }
 
-      // ——— Change password ———
-      if (path === "/api/auth/change-password" && method === "POST") {
+      // ============ STUDENT SELF-SERVICE ============
+
+      if (path === "/api/me" && method === "GET") {
+        const u = await requireUser(request, env);
+        if (!u) return wrap(json({ error: "לא מחובר" }, 401));
+        if (u.role === "admin") return wrap(json({ role: "admin", user: u.user }));
+        const raw = await env.KV.get(`user:${u.userId}`);
+        if (!raw) return wrap(json({ error: "משתמש לא נמצא" }, 404));
+        const data = JSON.parse(raw);
+        const pRaw = await env.KV.get(`user_progress:${u.userId}`);
+        const progress = pRaw ? JSON.parse(pRaw) : {};
+        const cRaw = await env.KV.get("courses:catalog");
+        const catalog = cRaw ? JSON.parse(cRaw) : [];
+        const myCourses = catalog.filter(c => (data.courseAccess || []).includes(c.id));
+        for (const c of myCourses) {
+          const vRaw = await env.KV.get(`videos:${c.id}`);
+          const vids = vRaw ? JSON.parse(vRaw) : [];
+          c.totalVideos = vids.length;
+          c.completedVideos = vids.filter(v => progress[`${c.id}_${v.id}`]).length;
+          c.progressPct = vids.length ? Math.round((c.completedVideos / vids.length) * 100) : 0;
+        }
+        return wrap(json({
+          role: "student",
+          user: { id: u.userId, email: data.email, fullName: data.fullName, phone: data.phone },
+          courses: myCourses,
+          progress,
+        }));
+      }
+
+      if (path === "/api/me/change-password" && method === "POST") {
+        const u = await requireUser(request, env);
+        if (!u || u.role !== "student") return wrap(json({ error: "לא מחובר" }, 401));
         const { oldPassword, newPassword } = await request.json().catch(() => ({}));
-        if (!oldPassword || !newPassword) {
-          return wrap(json({ error: "חסרים שדות" }, { status: 400 }));
+        if (!oldPassword || !newPassword) return wrap(json({ error: "חסרים שדות" }, 400));
+        if (newPassword.length < 6) return wrap(json({ error: "סיסמה קצרה" }, 400));
+        const raw = await env.KV.get(`user:${u.userId}`);
+        const data = JSON.parse(raw);
+        if ((await sha256(oldPassword)) !== data.hash) return wrap(json({ error: "סיסמה נוכחית שגויה" }, 400));
+        data.hash = await sha256(newPassword);
+        await env.KV.put(`user:${u.userId}`, JSON.stringify(data));
+        return wrap(json({ ok: true }));
+      }
+
+      if (path === "/api/me/progress" && method === "POST") {
+        const u = await requireUser(request, env);
+        if (!u || u.role !== "student") return wrap(json({ error: "לא מחובר" }, 401));
+        const { courseId, videoId, completed } = await request.json().catch(() => ({}));
+        const key = `user_progress:${u.userId}`;
+        const raw = await env.KV.get(key);
+        const progress = raw ? JSON.parse(raw) : {};
+        const k = `${courseId}_${videoId}`;
+        if (completed) progress[k] = Date.now(); else delete progress[k];
+        await env.KV.put(key, JSON.stringify(progress));
+        return wrap(json({ ok: true, progress }));
+      }
+
+      const matMatch = path.match(/^\/api\/me\/materials\/([^\/]+)$/);
+      if (matMatch && method === "GET") {
+        const u = await requireUser(request, env);
+        if (!u) return wrap(json({ error: "לא מחובר" }, 401));
+        const courseId = matMatch[1];
+        if (u.role === "student") {
+          const raw = await env.KV.get(`user:${u.userId}`);
+          const data = raw ? JSON.parse(raw) : null;
+          if (!data || !(data.courseAccess || []).includes(courseId)) return wrap(json({ error: "אין גישה" }, 403));
         }
-        if (newPassword.length < 6) {
-          return wrap(json({ error: "הסיסמה החדשה קצרה מדי (מינימום 6)" }, { status: 400 }));
+        const raw = await env.KV.get(`materials:${courseId}`);
+        return wrap(json(raw ? JSON.parse(raw) : []));
+      }
+
+      // Certificate (auto-generated for completed courses)
+      const certMatch = path.match(/^\/api\/me\/certificate\/([^\/]+)$/);
+      if (certMatch && method === "GET") {
+        const u = await requireUser(request, env);
+        if (!u || u.role !== "student") return wrap(json({ error: "לא מחובר" }, 401));
+        const courseId = certMatch[1];
+        const userRaw = await env.KV.get(`user:${u.userId}`);
+        const user = userRaw ? JSON.parse(userRaw) : null;
+        if (!user || !(user.courseAccess || []).includes(courseId)) return wrap(json({ error: "אין גישה" }, 403));
+        const cRaw = await env.KV.get("courses:catalog");
+        const catalog = cRaw ? JSON.parse(cRaw) : [];
+        const course = catalog.find(c => c.id === courseId);
+        if (!course) return wrap(json({ error: "קורס לא נמצא" }, 404));
+        const vRaw = await env.KV.get(`videos:${courseId}`);
+        const vids = vRaw ? JSON.parse(vRaw) : [];
+        const pRaw = await env.KV.get(`user_progress:${u.userId}`);
+        const progress = pRaw ? JSON.parse(pRaw) : {};
+        const completed = vids.filter(v => progress[`${courseId}_${v.id}`]).length;
+        const pct = vids.length ? (completed / vids.length) * 100 : 0;
+        if (pct < 100) return wrap(json({ error: "השלמת הקורס נדרשת לקבלת תעודה", progressPct: Math.round(pct) }, 400));
+        return wrap(json({
+          ok: true,
+          certificate: {
+            studentName: user.fullName,
+            courseTitle: course.title,
+            issuedAt: Date.now(),
+            certificateId: rid("cert_"),
+          },
+        }));
+      }
+
+      // Chat — student
+      if (path === "/api/me/chat" && method === "GET") {
+        const u = await requireUser(request, env);
+        if (!u || u.role !== "student") return wrap(json({ error: "לא מחובר" }, 401));
+        const raw = await env.KV.get(`chat:${u.userId}`);
+        return wrap(json(raw ? JSON.parse(raw) : []));
+      }
+      if (path === "/api/me/chat" && method === "POST") {
+        const u = await requireUser(request, env);
+        if (!u || u.role !== "student") return wrap(json({ error: "לא מחובר" }, 401));
+        const { message } = await request.json().catch(() => ({}));
+        if (!message || !message.trim()) return wrap(json({ error: "הודעה ריקה" }, 400));
+        const key = `chat:${u.userId}`;
+        const raw = await env.KV.get(key);
+        const thread = raw ? JSON.parse(raw) : [];
+        thread.push({ id: rid("m_"), from: "student", text: message.trim().slice(0, 5000), time: Date.now(), read: false });
+        await env.KV.put(key, JSON.stringify(thread));
+        return wrap(json({ ok: true, thread }));
+      }
+
+      // ============ CHECKOUT ============
+
+      if (path === "/api/checkout" && method === "POST") {
+        const { courseId, fullName, email, phone, returnUrl } = await request.json().catch(() => ({}));
+        if (!courseId || !fullName || !email) return wrap(json({ error: "חסרים פרטים" }, 400));
+        const cRaw = await env.KV.get("courses:catalog");
+        const catalog = cRaw ? JSON.parse(cRaw) : [];
+        const course = catalog.find(c => c.id === courseId && c.published);
+        if (!course) return wrap(json({ error: "קורס לא נמצא" }, 404));
+        const orderId = rid("o_");
+        const order = {
+          id: orderId, courseId, courseTitle: course.title,
+          amount: course.price || 0,
+          fullName: String(fullName).slice(0, 120),
+          email: String(email).toLowerCase().slice(0, 200),
+          phone: String(phone || "").slice(0, 30),
+          status: "pending", createdAt: Date.now(),
+        };
+        await env.KV.put(`order:${orderId}`, JSON.stringify(order));
+        if (course.free || course.price === 0) {
+          const r = await activateOrder(env, orderId, returnUrl);
+          return wrap(json({ ok: true, free: true, ...r }));
         }
-        const authRaw = await env.KV.get("auth:doron");
-        const auth = JSON.parse(authRaw);
-        const oldHash = await sha256(oldPassword);
-        if (oldHash !== auth.hash) {
-          return wrap(json({ error: "הסיסמה הנוכחית שגויה" }, { status: 400 }));
+        const cfgRaw = await env.KV.get("icount_config");
+        if (!cfgRaw) {
+          return wrap(json({
+            error: "תשלומים אונליין טרם הוגדרו. צור קשר טלפוני להשלמת הרכישה.",
+            order, manual: true,
+          }, 503));
         }
+        try {
+          const payUrl = await buildIcountPayLink(env, order, returnUrl || `https://${url.host}/checkout-success?o=${orderId}`);
+          order.payUrl = payUrl;
+          await env.KV.put(`order:${orderId}`, JSON.stringify(order));
+          return wrap(json({ ok: true, orderId, payUrl }));
+        } catch (e) {
+          return wrap(json({ error: e.message }, 500));
+        }
+      }
+
+      if (path === "/api/checkout/icount-webhook" && method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const orderId = body.custom_info || body.custom || body.orderId;
+        if (!orderId) return wrap(json({ error: "no orderId" }, 400));
+        const r = await activateOrder(env, orderId, null);
+        return wrap(json({ ok: true, ...r }));
+      }
+
+      if (path === "/api/checkout/check" && method === "GET") {
+        const orderId = url.searchParams.get("o");
+        if (!orderId) return wrap(json({ error: "no orderId" }, 400));
+        const raw = await env.KV.get(`order:${orderId}`);
+        if (!raw) return wrap(json({ error: "order not found" }, 404));
+        const order = JSON.parse(raw);
+        return wrap(json({ status: order.status, courseTitle: order.courseTitle, email: order.email }));
+      }
+
+      // ============ ADMIN ============
+
+      const admin = await requireAdmin(request, env);
+
+      if (path === "/api/admin/articles" && method === "POST") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const { article } = await request.json().catch(() => ({}));
+        if (!article || !article.title || !article.content) return wrap(json({ error: "חסרים שדות" }, 400));
+        const raw = await env.KV.get("articles:list");
+        const list = raw ? JSON.parse(raw) : [];
+        list.push({
+          id: rid("a_"),
+          title: String(article.title).slice(0, 200),
+          content: String(article.content).slice(0, 30000),
+          category: article.category === "opinion" ? "opinion" : "foundation",
+          date: Date.now(),
+        });
+        await env.KV.put("articles:list", JSON.stringify(list));
+        return wrap(json({ ok: true }));
+      }
+      const artDel = path.match(/^\/api\/admin\/articles\/([^\/]+)$/);
+      if (artDel && method === "DELETE") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const raw = await env.KV.get("articles:list");
+        const list = raw ? JSON.parse(raw) : [];
+        await env.KV.put("articles:list", JSON.stringify(list.filter(a => a.id !== artDel[1])));
+        return wrap(json({ ok: true }));
+      }
+
+      if (path === "/api/admin/catalog" && method === "GET") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const raw = await env.KV.get("courses:catalog");
+        return wrap(json(raw ? JSON.parse(raw) : []));
+      }
+      if (path === "/api/admin/catalog" && method === "POST") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const { course } = await request.json().catch(() => ({}));
+        if (!course || !course.title) return wrap(json({ error: "חסרים שדות" }, 400));
+        const raw = await env.KV.get("courses:catalog");
+        const list = raw ? JSON.parse(raw) : [];
+        if (course.id) {
+          const idx = list.findIndex(c => c.id === course.id);
+          if (idx >= 0) list[idx] = { ...list[idx], ...course };
+          else list.push(course);
+        } else {
+          course.id = rid("c_");
+          course.createdAt = Date.now();
+          list.push(course);
+        }
+        await env.KV.put("courses:catalog", JSON.stringify(list));
+        return wrap(json({ ok: true, course: list.find(c => c.id === course.id) }));
+      }
+      const courseDel = path.match(/^\/api\/admin\/catalog\/([^\/]+)$/);
+      if (courseDel && method === "DELETE") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const raw = await env.KV.get("courses:catalog");
+        const list = raw ? JSON.parse(raw) : [];
+        await env.KV.put("courses:catalog", JSON.stringify(list.filter(c => c.id !== courseDel[1])));
+        return wrap(json({ ok: true }));
+      }
+
+      const advid = path.match(/^\/api\/admin\/videos\/([^\/]+)$/);
+      if (advid && method === "GET") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const raw = await env.KV.get(`videos:${advid[1]}`);
+        return wrap(json(raw ? JSON.parse(raw) : []));
+      }
+      if (advid && method === "POST") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const { video } = await request.json().catch(() => ({}));
+        if (!video || !video.title || !video.url) return wrap(json({ error: "חסרים שדות" }, 400));
+        const courseId = advid[1];
+        const raw = await env.KV.get(`videos:${courseId}`);
+        const list = raw ? JSON.parse(raw) : [];
+        list.push({
+          id: rid("v_"),
+          title: String(video.title).slice(0, 200),
+          url: String(video.url).slice(0, 500),
+          description: String(video.description || "").slice(0, 2000),
+          addedAt: Date.now(),
+        });
+        await env.KV.put(`videos:${courseId}`, JSON.stringify(list));
+        return wrap(json({ ok: true, videos: list }));
+      }
+      const advidDel = path.match(/^\/api\/admin\/videos\/([^\/]+)\/([^\/]+)$/);
+      if (advidDel && method === "DELETE") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const [, courseId, videoId] = advidDel;
+        const raw = await env.KV.get(`videos:${courseId}`);
+        const list = raw ? JSON.parse(raw) : [];
+        await env.KV.put(`videos:${courseId}`, JSON.stringify(list.filter(v => v.id !== videoId)));
+        return wrap(json({ ok: true }));
+      }
+
+      const admat = path.match(/^\/api\/admin\/materials\/([^\/]+)$/);
+      if (admat && method === "GET") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const raw = await env.KV.get(`materials:${admat[1]}`);
+        return wrap(json(raw ? JSON.parse(raw) : []));
+      }
+      if (admat && method === "POST") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const { material } = await request.json().catch(() => ({}));
+        if (!material || !material.title || !material.url) return wrap(json({ error: "חסרים שדות" }, 400));
+        const courseId = admat[1];
+        const raw = await env.KV.get(`materials:${courseId}`);
+        const list = raw ? JSON.parse(raw) : [];
+        list.push({
+          id: rid("mat_"),
+          title: String(material.title).slice(0, 200),
+          url: String(material.url).slice(0, 1000),
+          fileType: material.fileType || "pdf",
+          addedAt: Date.now(),
+        });
+        await env.KV.put(`materials:${courseId}`, JSON.stringify(list));
+        return wrap(json({ ok: true }));
+      }
+      const admatDel = path.match(/^\/api\/admin\/materials\/([^\/]+)\/([^\/]+)$/);
+      if (admatDel && method === "DELETE") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const [, courseId, matId] = admatDel;
+        const raw = await env.KV.get(`materials:${courseId}`);
+        const list = raw ? JSON.parse(raw) : [];
+        await env.KV.put(`materials:${courseId}`, JSON.stringify(list.filter(m => m.id !== matId)));
+        return wrap(json({ ok: true }));
+      }
+
+      if (path === "/api/admin/users" && method === "GET") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const list = await env.KV.list({ prefix: "user:" });
+        const users = [];
+        for (const k of list.keys) {
+          const raw = await env.KV.get(k.name);
+          if (raw) {
+            const u = JSON.parse(raw);
+            users.push({
+              id: k.name.replace("user:", ""),
+              email: u.email, fullName: u.fullName, phone: u.phone,
+              courseAccess: u.courseAccess || [], createdAt: u.createdAt,
+            });
+          }
+        }
+        return wrap(json(users.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))));
+      }
+
+      if (path === "/api/admin/users" && method === "POST") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const { fullName, email, phone, courseIds, sendWelcomeEmail, loginUrl } = await request.json().catch(() => ({}));
+        if (!email || !fullName) return wrap(json({ error: "חסרים שדות" }, 400));
+        const r = await createOrUpdateUser(env, { fullName, email, phone, courseIds: courseIds || [] });
+        if (sendWelcomeEmail && r.password) {
+          const cRaw = await env.KV.get("courses:catalog");
+          const cat = cRaw ? JSON.parse(cRaw) : [];
+          const titles = (courseIds || []).map(id => (cat.find(c => c.id === id) || {}).title).filter(Boolean).join(", ") || "הקורסים שלך";
+          await sendEmail(env, r.email, "ברוך הבא לקורסים של דורון",
+            welcomeEmail(r.fullName, r.email, r.password, titles, loginUrl || "https://doron-site.pages.dev"));
+        }
+        return wrap(json({ ok: true, ...r }));
+      }
+
+      const userUpd = path.match(/^\/api\/admin\/users\/([^\/]+)$/);
+      if (userUpd && method === "PUT") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const userId = userUpd[1];
+        const { courseIds, fullName, phone, resetPassword, sendWelcomeEmail, loginUrl } = await request.json().catch(() => ({}));
+        const raw = await env.KV.get(`user:${userId}`);
+        if (!raw) return wrap(json({ error: "משתמש לא נמצא" }, 404));
+        const u = JSON.parse(raw);
+        if (Array.isArray(courseIds)) u.courseAccess = courseIds;
+        if (fullName) u.fullName = fullName;
+        if (phone !== undefined) u.phone = phone;
+        let newPassword = null;
+        if (resetPassword) { newPassword = genPassword(); u.hash = await sha256(newPassword); }
+        await env.KV.put(`user:${userId}`, JSON.stringify(u));
+        if (sendWelcomeEmail && newPassword) {
+          await sendEmail(env, u.email, "פרטי הגישה שלך עודכנו",
+            welcomeEmail(u.fullName, u.email, newPassword, "האזור האישי שלך", loginUrl || "https://doron-site.pages.dev"));
+        }
+        return wrap(json({ ok: true, password: newPassword }));
+      }
+      
+      if (userUpd && method === "DELETE") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const userId = userUpd[1];
+        const raw = await env.KV.get(`user:${userId}`);
+        if (raw) {
+          const u = JSON.parse(raw);
+          await env.KV.delete(`user_email:${u.email}`);
+        }
+        await env.KV.delete(`user:${userId}`);
+        await env.KV.delete(`user_progress:${userId}`);
+        await env.KV.delete(`chat:${userId}`);
+        return wrap(json({ ok: true }));
+      }
+
+      if (path === "/api/admin/orders" && method === "GET") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const list = await env.KV.list({ prefix: "order:" });
+        const orders = [];
+        for (const k of list.keys) {
+          const raw = await env.KV.get(k.name);
+          if (raw) orders.push(JSON.parse(raw));
+        }
+        return wrap(json(orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))));
+      }
+
+      const orderActMatch = path.match(/^\/api\/admin\/orders\/([^\/]+)\/activate$/);
+      if (orderActMatch && method === "POST") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const { loginUrl } = await request.json().catch(() => ({}));
+        const r = await activateOrder(env, orderActMatch[1], loginUrl);
+        return wrap(json({ ok: true, ...r }));
+      }
+
+      if (path === "/api/admin/chats" && method === "GET") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const list = await env.KV.list({ prefix: "chat:" });
+        const threads = [];
+        for (const k of list.keys) {
+          const userId = k.name.replace("chat:", "");
+          const raw = await env.KV.get(k.name);
+          if (raw) {
+            const messages = JSON.parse(raw);
+            const userRaw = await env.KV.get(`user:${userId}`);
+            const u = userRaw ? JSON.parse(userRaw) : { email: "?", fullName: "?" };
+            const lastMsg = messages[messages.length - 1];
+            const unread = messages.filter(m => m.from === "student" && !m.read).length;
+            threads.push({
+              userId, email: u.email, fullName: u.fullName,
+              lastMessage: lastMsg ? lastMsg.text : "",
+              lastTime: lastMsg ? lastMsg.time : 0,
+              unread, count: messages.length,
+            });
+          }
+        }
+        return wrap(json(threads.sort((a, b) => b.lastTime - a.lastTime)));
+      }
+
+      const adChat = path.match(/^\/api\/admin\/chats\/([^\/]+)$/);
+      if (adChat && method === "GET") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const userId = adChat[1];
+        const raw = await env.KV.get(`chat:${userId}`);
+        const messages = raw ? JSON.parse(raw) : [];
+        let modified = false;
+        for (const m of messages) {
+          if (m.from === "student" && !m.read) { m.read = true; modified = true; }
+        }
+        if (modified) await env.KV.put(`chat:${userId}`, JSON.stringify(messages));
+        return wrap(json(messages));
+      }
+      if (adChat && method === "POST") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const userId = adChat[1];
+        const { message } = await request.json().catch(() => ({}));
+        if (!message || !message.trim()) return wrap(json({ error: "הודעה ריקה" }, 400));
+        const raw = await env.KV.get(`chat:${userId}`);
+        const messages = raw ? JSON.parse(raw) : [];
+        messages.push({ id: rid("m_"), from: "admin", text: message.trim().slice(0, 5000), time: Date.now(), read: false });
+        await env.KV.put(`chat:${userId}`, JSON.stringify(messages));
+        return wrap(json({ ok: true }));
+      }
+
+      if (path === "/api/admin/config" && method === "GET") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const ic = await env.KV.get("icount_config");
+        const rs = await env.KV.get("resend_config");
+        const st = await env.KV.get("site_config");
+        const icp = ic ? JSON.parse(ic) : null;
+        const rsp = rs ? JSON.parse(rs) : null;
+        return wrap(json({
+          icount: icp ? { configured: true, companyId: icp.companyId, user: icp.user, password: "****" } : { configured: false },
+          resend: rsp ? { configured: true, from: rsp.from, apiKey: "****" } : { configured: false },
+          site: st ? JSON.parse(st) : { currency: "₪" },
+        }));
+      }
+      if (path === "/api/admin/config" && method === "POST") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const body = await request.json().catch(() => ({}));
+        if (body.icount) {
+          const exRaw = await env.KV.get("icount_config");
+          const ex = exRaw ? JSON.parse(exRaw) : {};
+          const m = { ...ex, ...body.icount };
+          if (m.password === "****") m.password = ex.password;
+          await env.KV.put("icount_config", JSON.stringify(m));
+        }
+        if (body.resend) {
+          const exRaw = await env.KV.get("resend_config");
+          const ex = exRaw ? JSON.parse(exRaw) : {};
+          const m = { ...ex, ...body.resend };
+          if (m.apiKey === "****") m.apiKey = ex.apiKey;
+          await env.KV.put("resend_config", JSON.stringify(m));
+        }
+        if (body.site) await env.KV.put("site_config", JSON.stringify(body.site));
+        return wrap(json({ ok: true }));
+      }
+
+      if (path === "/api/admin/test-email" && method === "POST") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const { to } = await request.json().catch(() => ({}));
+        if (!to) return wrap(json({ error: "חסר נמען" }, 400));
+        const r = await sendEmail(env, to, "מייל בדיקה - מערכת דורון",
+          `<div style="font-family:Arial,sans-serif;padding:20px"><h2 style="color:#14213D">המייל פועל! 🎉</h2><p>אם הגעת למייל הזה, המערכת מוכנה לשליחת הודעות אוטומטיות ללקוחות.</p></div>`);
+        return wrap(json(r));
+      }
+
+      if (path === "/api/admin/change-password" && method === "POST") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const { oldPassword, newPassword } = await request.json().catch(() => ({}));
+        if (!oldPassword || !newPassword) return wrap(json({ error: "חסרים שדות" }, 400));
+        if (newPassword.length < 6) return wrap(json({ error: "סיסמה קצרה" }, 400));
+        const raw = await env.KV.get("auth:doron");
+        const auth = JSON.parse(raw);
+        if ((await sha256(oldPassword)) !== auth.hash) return wrap(json({ error: "סיסמה נוכחית שגויה" }, 400));
         auth.hash = await sha256(newPassword);
         await env.KV.put("auth:doron", JSON.stringify(auth));
         return wrap(json({ ok: true }));
       }
 
-      // ——— Add video ———
-      if (path === "/api/content/videos" && method === "POST") {
-        const { courseId, video } = await request.json().catch(() => ({}));
-        if (!courseId || !video || !video.title || !video.url) {
-          return wrap(json({ error: "חסרים שדות חובה" }, { status: 400 }));
+      // Stats overview
+      if (path === "/api/admin/stats" && method === "GET") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const ulist = await env.KV.list({ prefix: "user:" });
+        const olist = await env.KV.list({ prefix: "order:" });
+        const clist = await env.KV.list({ prefix: "chat:" });
+        const cRaw = await env.KV.get("courses:catalog");
+        const courses = cRaw ? JSON.parse(cRaw) : [];
+        let totalRevenue = 0;
+        let paidOrders = 0;
+        let unreadChats = 0;
+        for (const k of olist.keys) {
+          const raw = await env.KV.get(k.name);
+          if (raw) {
+            const o = JSON.parse(raw);
+            if (o.status === "paid") { totalRevenue += (o.amount || 0); paidOrders++; }
+          }
         }
-        const raw = await env.KV.get("content:videos");
-        const data = raw ? JSON.parse(raw) : {};
-        if (!data[courseId]) data[courseId] = [];
-        const entry = {
-          id: video.id || "v_" + Date.now().toString(36),
-          title: String(video.title).slice(0, 200),
-          url: String(video.url).slice(0, 500),
-          description: String(video.description || "").slice(0, 2000),
-          addedAt: Date.now(),
-        };
-        data[courseId].unshift(entry);
-        await env.KV.put("content:videos", JSON.stringify(data));
-        return wrap(json({ ok: true, videos: data }));
-      }
-
-      // ——— Delete video ———
-      const vidMatch = path.match(/^\/api\/content\/videos\/([^\/]+)\/([^\/]+)$/);
-      if (vidMatch && method === "DELETE") {
-        const [, courseId, videoId] = vidMatch;
-        const raw = await env.KV.get("content:videos");
-        const data = raw ? JSON.parse(raw) : {};
-        if (data[courseId]) {
-          data[courseId] = data[courseId].filter(v => v.id !== videoId);
+        for (const k of clist.keys) {
+          const raw = await env.KV.get(k.name);
+          if (raw) {
+            const t = JSON.parse(raw);
+            if (t.some(m => m.from === "student" && !m.read)) unreadChats++;
+          }
         }
-        await env.KV.put("content:videos", JSON.stringify(data));
-        return wrap(json({ ok: true }));
+        return wrap(json({
+          totalUsers: ulist.keys.length,
+          totalOrders: olist.keys.length,
+          paidOrders,
+          totalRevenue,
+          totalCourses: courses.length,
+          publishedCourses: courses.filter(c => c.published).length,
+          unreadChats,
+        }));
       }
 
-      // ——— Add article ———
-      if (path === "/api/content/articles" && method === "POST") {
-        const { article } = await request.json().catch(() => ({}));
-        if (!article || !article.title || !article.content) {
-          return wrap(json({ error: "חסרים שדות חובה" }, { status: 400 }));
-        }
-        const raw = await env.KV.get("content:articles");
-        const list = raw ? JSON.parse(raw) : [];
-        const entry = {
-          id: article.id || "a_" + Date.now().toString(36),
-          title: String(article.title).slice(0, 200),
-          content: String(article.content).slice(0, 20000),
-          category: article.category === "opinion" ? "opinion" : "foundation",
-          date: Date.now(),
-        };
-        list.push(entry);
-        await env.KV.put("content:articles", JSON.stringify(list));
-        return wrap(json({ ok: true }));
-      }
-
-      // ——— Delete article ———
-      const artMatch = path.match(/^\/api\/content\/articles\/([^\/]+)$/);
-      if (artMatch && method === "DELETE") {
-        const [, articleId] = artMatch;
-        const raw = await env.KV.get("content:articles");
-        const list = raw ? JSON.parse(raw) : [];
-        const filtered = list.filter(a => a.id !== articleId);
-        await env.KV.put("content:articles", JSON.stringify(filtered));
-        return wrap(json({ ok: true }));
-      }
-
-      return wrap(json({ error: "Not found", path }, { status: 404 }));
+      return wrap(json({ error: "Not found", path }, 404));
     } catch (err) {
       console.error(err);
-      return wrap(json({ error: err.message || "שגיאה פנימית" }, { status: 500 }));
+      return wrap(json({ error: err.message || "שגיאה פנימית" }, 500));
     }
   },
 };

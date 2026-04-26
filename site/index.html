@@ -9,237 +9,31 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Assistant:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%2314213D'/%3E%3Ctext x='50' y='68' font-family='serif' font-size='55' fill='%23C9A961' text-anchor='middle' font-weight='700'%3E%D7%93%3C/text%3E%3C/svg%3E">
-<style>
-:root{
-  --cream:#F5EFE6;--cream-light:#FAF7F2;--cream-dark:#EBE2D3;
-  --navy:#14213D;--navy-soft:#1e2d4f;
-  --gold:#C9A961;--gold-dark:#A68940;--gold-light:#E4CD8D;
-  --text:#1a1a1a;--text-soft:#4a4a4a;--text-muted:#888;
-  --border:rgba(20,33,61,.12);
-  --shadow:0 1px 3px rgba(20,33,61,.08);
-  --shadow-lg:0 20px 60px -20px rgba(20,33,61,.25);
-  --radius:14px;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'Assistant',sans-serif;background:var(--cream-light);color:var(--text);line-height:1.6;font-weight:400;min-height:100vh;overflow-x:hidden}
-h1,h2,h3,h4{font-family:'Frank Ruhl Libre',serif;font-weight:500;line-height:1.25;letter-spacing:-.01em}
-button,input,textarea,select{font-family:inherit;font-size:inherit}
-a{color:inherit;text-decoration:none}
-img{max-width:100%;display:block}
-
-body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(ellipse at top right,rgba(201,169,97,.08),transparent 55%),radial-gradient(ellipse at bottom left,rgba(20,33,61,.05),transparent 55%)}
-
-.site-header{position:sticky;top:0;z-index:50;background:rgba(250,247,242,.88);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--border)}
-.nav{max-width:1200px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.brand{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
-.brand-mark{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--navy-soft));display:grid;place-items:center;color:var(--gold);font-family:'Frank Ruhl Libre',serif;font-size:22px;font-weight:700;box-shadow:0 4px 14px rgba(20,33,61,.22)}
-.brand-name{font-family:'Frank Ruhl Libre',serif;font-size:22px;font-weight:700;letter-spacing:.02em}
-.brand-name small{display:block;font-family:'Assistant',sans-serif;font-size:11px;font-weight:400;color:var(--gold-dark);letter-spacing:.15em;margin-top:-2px}
-.nav-links{display:none;gap:26px;align-items:center}
-.nav-links a{font-size:15px;color:var(--text-soft);transition:color .2s}
-.nav-links a:hover{color:var(--gold-dark)}
-.icon-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--navy);transition:all .2s;flex-shrink:0}
-.icon-btn:hover{background:var(--cream-dark);border-color:var(--gold)}
-@media(min-width:760px){.nav-links{display:flex}}
-
-.hero{position:relative;padding:80px 20px 70px;overflow:hidden}
-.hero-inner{max-width:1100px;margin:0 auto;position:relative;z-index:2}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:100px;background:rgba(201,169,97,.15);color:var(--gold-dark);font-size:12px;font-weight:600;letter-spacing:.12em;margin-bottom:28px}
-.hero-eyebrow::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--gold-dark)}
-.hero h1{font-size:clamp(42px,8vw,88px);font-weight:700;line-height:1.02;color:var(--navy);margin-bottom:26px}
-.hero h1 em{font-style:italic;font-weight:400;color:var(--gold-dark);display:inline-block}
-.hero-lead{font-size:clamp(17px,2.4vw,21px);color:var(--text-soft);max-width:640px;line-height:1.65;margin-bottom:38px}
-.hero-actions{display:flex;flex-wrap:wrap;gap:14px}
-.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 28px;border-radius:100px;font-weight:600;font-size:15px;cursor:pointer;transition:all .25s;border:none;letter-spacing:.01em}
-.btn-primary{background:var(--navy);color:var(--cream-light)}
-.btn-primary:hover{background:var(--navy-soft);transform:translateY(-1px);box-shadow:0 10px 28px -10px var(--navy)}
-.btn-outline{background:transparent;color:var(--navy);border:1.5px solid var(--navy)}
-.btn-outline:hover{background:var(--navy);color:var(--cream-light)}
-.btn-gold{background:var(--gold);color:var(--navy)}
-.btn-gold:hover{background:var(--gold-dark);color:var(--cream-light)}
-.btn-ghost{background:transparent;color:var(--text-soft)}
-.btn-ghost:hover{color:var(--navy)}
-.btn-sm{padding:9px 18px;font-size:13px}
-
-.hero-ornament{position:absolute;left:-80px;top:50%;transform:translateY(-50%);width:380px;height:380px;opacity:.5;pointer-events:none;z-index:1}
-@media(max-width:760px){.hero-ornament{display:none}}
-
-section{position:relative;z-index:1}
-.section{padding:70px 20px}
-.section-inner{max-width:1100px;margin:0 auto}
-.section-head{margin-bottom:44px;max-width:700px}
-.section-kicker{font-size:12px;font-weight:700;letter-spacing:.2em;color:var(--gold-dark);margin-bottom:14px;display:flex;align-items:center;gap:10px}
-.section-kicker::before{content:"";width:28px;height:1px;background:var(--gold)}
-.section h2{font-size:clamp(30px,5vw,46px);color:var(--navy);margin-bottom:16px}
-.section-lead{font-size:17px;color:var(--text-soft);line-height:1.7}
-
-.about{background:var(--cream)}
-.about-grid{display:grid;grid-template-columns:1fr;gap:36px}
-@media(min-width:860px){.about-grid{grid-template-columns:1.15fr .85fr;gap:60px;align-items:start}}
-.about-text p{margin-bottom:16px;font-size:16.5px;color:var(--text-soft);line-height:1.8}
-.about-text p:first-child::first-letter{font-family:'Frank Ruhl Libre',serif;font-size:56px;font-weight:700;color:var(--gold-dark);float:right;line-height:.9;margin:6px 0 0 8px}
-.about-card{background:var(--cream-light);border:1px solid var(--border);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow)}
-.about-card h4{font-size:18px;margin-bottom:8px;color:var(--navy)}
-.about-card-row{display:flex;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
-.about-card-row:last-child{border:none;padding-bottom:0}
-.about-card-row .ico{width:38px;height:38px;border-radius:10px;background:var(--cream-dark);display:grid;place-items:center;color:var(--navy);flex-shrink:0}
-.about-card-row strong{display:block;font-size:13px;color:var(--text-muted);font-weight:500}
-.about-card-row span{font-weight:600;color:var(--navy)}
-
-.courses-grid{display:grid;grid-template-columns:1fr;gap:22px}
-@media(min-width:640px){.courses-grid{grid-template-columns:repeat(2,1fr)}}
-@media(min-width:1000px){.courses-grid{grid-template-columns:repeat(4,1fr)}}
-.course{background:var(--cream-light);border:1px solid var(--border);border-radius:var(--radius);padding:26px;transition:all .3s cubic-bezier(.2,.7,.3,1);position:relative;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;min-height:260px}
-.course::before{content:"";position:absolute;top:0;right:0;left:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity .3s}
-.course:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--gold)}
-.course:hover::before{opacity:1}
-.course-num{font-family:'Frank Ruhl Libre',serif;font-size:14px;color:var(--gold-dark);font-weight:500;letter-spacing:.1em;margin-bottom:12px}
-.course h3{font-size:24px;color:var(--navy);margin-bottom:10px}
-.course p{font-size:14.5px;color:var(--text-soft);line-height:1.65;flex:1;margin-bottom:16px}
-.course-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:16px;border-top:1px solid var(--border)}
-.video-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--gold-dark);font-weight:600}
-.video-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.course-arrow{width:32px;height:32px;border-radius:50%;background:var(--cream-dark);display:grid;place-items:center;color:var(--navy);transition:transform .2s}
-.course:hover .course-arrow{transform:translateX(-4px);background:var(--gold);color:var(--navy)}
-
-.offerings{background:var(--navy);color:var(--cream-light)}
-.offerings h2{color:var(--cream-light)}
-.offerings .section-kicker{color:var(--gold-light)}
-.offerings .section-kicker::before{background:var(--gold-light)}
-.offerings-grid{display:grid;grid-template-columns:1fr;gap:18px;margin-bottom:32px}
-@media(min-width:720px){.offerings-grid{grid-template-columns:repeat(3,1fr)}}
-.offering{padding:26px;border:1px solid rgba(201,169,97,.25);border-radius:var(--radius);background:rgba(255,255,255,.03);transition:all .3s;cursor:pointer}
-.offering:hover{background:rgba(201,169,97,.08);border-color:var(--gold)}
-.offering-ico{width:46px;height:46px;border-radius:12px;background:rgba(201,169,97,.15);color:var(--gold-light);display:grid;place-items:center;margin-bottom:16px}
-.offering h4{font-size:20px;color:var(--cream-light);margin-bottom:6px}
-.offering p{font-size:14px;color:rgba(245,239,230,.7);line-height:1.6}
-
-.journey{background:var(--cream)}
-.journey-card{background:linear-gradient(135deg,var(--navy),var(--navy-soft));color:var(--cream-light);border-radius:20px;padding:50px 36px;position:relative;overflow:hidden}
-.journey-card::before{content:"";position:absolute;top:-40px;left:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(201,169,97,.25),transparent 65%)}
-.journey-card h3{font-size:clamp(26px,4vw,38px);color:var(--cream-light);margin-bottom:14px;position:relative}
-.journey-card p{font-size:16px;color:rgba(245,239,230,.85);max-width:560px;margin-bottom:26px;position:relative;line-height:1.75}
-
-.articles-head{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between;margin-bottom:36px}
-.search-box{display:flex;align-items:center;gap:10px;background:var(--cream-light);border:1px solid var(--border);border-radius:100px;padding:10px 18px;min-width:260px;transition:border-color .2s}
-.search-box:focus-within{border-color:var(--gold)}
-.search-box input{border:none;background:transparent;outline:none;flex:1;font-size:15px}
-.articles-grid{display:grid;grid-template-columns:1fr;gap:22px}
-@media(min-width:720px){.articles-grid{grid-template-columns:repeat(2,1fr)}}
-@media(min-width:1000px){.articles-grid{grid-template-columns:repeat(3,1fr)}}
-.article-card{background:var(--cream-light);border:1px solid var(--border);border-radius:var(--radius);padding:26px;transition:all .3s;cursor:pointer}
-.article-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--gold-light)}
-.article-meta{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:12px}
-.article-tag{padding:3px 10px;border-radius:100px;background:var(--cream-dark);color:var(--navy);font-weight:600;letter-spacing:.05em}
-.article-tag.opinion{background:rgba(201,169,97,.25);color:var(--gold-dark)}
-.article-date{color:var(--text-muted)}
-.article-card h4{font-size:20px;color:var(--navy);margin-bottom:10px;line-height:1.35}
-.article-card p{font-size:14.5px;color:var(--text-soft);line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-
-.empty-state{text-align:center;padding:60px 20px;color:var(--text-muted);border:1.5px dashed var(--border);border-radius:var(--radius);grid-column:1/-1}
-.empty-state .ico{font-size:36px;margin-bottom:10px;opacity:.6}
-
-footer{background:var(--navy);color:rgba(245,239,230,.8);padding:50px 20px 30px;margin-top:40px}
-.footer-inner{max-width:1100px;margin:0 auto;display:grid;gap:30px;grid-template-columns:1fr}
-@media(min-width:720px){.footer-inner{grid-template-columns:1.2fr 1fr 1fr}}
-.footer-brand h4{font-family:'Frank Ruhl Libre',serif;color:var(--gold-light);font-size:24px;margin-bottom:10px}
-.footer-brand p{font-size:14.5px;line-height:1.7;max-width:320px}
-footer h5{color:var(--cream-light);font-size:14px;letter-spacing:.15em;margin-bottom:14px;font-weight:700}
-footer ul{list-style:none}
-footer li{margin-bottom:10px;font-size:14.5px}
-footer a:hover{color:var(--gold-light)}
-.footer-bottom{max-width:1100px;margin:40px auto 0;padding-top:24px;border-top:1px solid rgba(201,169,97,.2);font-size:13px;color:rgba(245,239,230,.55);text-align:center}
-
-.modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(20,33,61,.55);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;animation:fadeIn .25s}
-.modal-backdrop.open{display:flex}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.modal{background:var(--cream-light);border-radius:18px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:slideUp .3s}
-.modal.wide{max-width:760px}
-@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal-head{padding:24px 26px 0;display:flex;align-items:center;justify-content:space-between}
-.modal-head h3{font-size:22px;color:var(--navy)}
-.modal-body{padding:24px 26px 26px}
-.modal-close{background:none;border:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--text-soft)}
-.modal-close:hover{background:var(--cream-dark)}
-
-.field{margin-bottom:16px}
-.field label{display:block;font-size:13px;font-weight:600;color:var(--navy);margin-bottom:6px;letter-spacing:.02em}
-.field input,.field select,.field textarea{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--cream-light);outline:none;transition:border-color .2s;font-size:15px;color:var(--text);font-family:inherit}
-.field textarea{min-height:90px;resize:vertical;line-height:1.6}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold)}
-.field .hint{font-size:12px;color:var(--text-muted);margin-top:5px}
-.form-error{background:rgba(220,60,60,.08);color:#b02a2a;padding:10px 14px;border-radius:8px;font-size:13.5px;margin-bottom:14px;border:1px solid rgba(220,60,60,.2)}
-.form-success{background:rgba(76,157,95,.1);color:#2c6b3c;padding:10px 14px;border-radius:8px;font-size:13.5px;margin-bottom:14px;border:1px solid rgba(76,157,95,.25)}
-
-.admin-tabs{display:flex;gap:4px;background:var(--cream-dark);padding:4px;border-radius:100px;margin-bottom:22px;overflow-x:auto}
-.admin-tab{flex:1;min-width:max-content;padding:9px 18px;border-radius:100px;border:none;background:transparent;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-soft);transition:all .2s;white-space:nowrap}
-.admin-tab.active{background:var(--navy);color:var(--cream-light)}
-
-.video-list{margin-top:18px}
-.video-item{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;background:var(--cream-light)}
-.video-thumb{width:80px;height:52px;border-radius:6px;overflow:hidden;background:var(--navy);flex-shrink:0;position:relative;display:grid;place-items:center;color:var(--gold)}
-.video-thumb img{width:100%;height:100%;object-fit:cover}
-.video-info{flex:1;min-width:0}
-.video-info strong{display:block;font-size:14.5px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.video-info small{font-size:12px;color:var(--text-muted)}
-.video-actions{display:flex;gap:6px}
-.btn-icon-danger{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:#b02a2a;display:grid;place-items:center;transition:all .2s}
-.btn-icon-danger:hover{background:rgba(220,60,60,.1);border-color:#b02a2a}
-
-.course-selector{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:20px}
-.course-pill{padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--cream-light);cursor:pointer;text-align:right;transition:all .2s;font-size:14px;font-weight:600;color:var(--navy)}
-.course-pill:hover{border-color:var(--gold)}
-.course-pill.active{background:var(--navy);color:var(--cream-light);border-color:var(--navy)}
-.course-pill .count{display:inline-block;margin-right:6px;padding:1px 8px;border-radius:100px;background:var(--gold);color:var(--navy);font-size:11px;font-weight:700}
-.course-pill.active .count{background:var(--gold-light)}
-
-.video-player{position:relative;padding-bottom:56.25%;height:0;background:#000;border-radius:10px;overflow:hidden;margin-bottom:16px}
-.video-player iframe,.video-player video{position:absolute;inset:0;width:100%;height:100%;border:none}
-
-.reveal{opacity:0;transform:translateY(16px);animation:reveal .7s cubic-bezier(.2,.7,.3,1) forwards}
-@keyframes reveal{to{opacity:1;transform:translateY(0)}}
-.reveal-1{animation-delay:.05s}
-.reveal-2{animation-delay:.15s}
-.reveal-3{animation-delay:.25s}
-.reveal-4{animation-delay:.35s}
-
-.admin-indicator{position:fixed;bottom:20px;left:20px;z-index:40;padding:8px 14px;border-radius:100px;background:var(--navy);color:var(--gold-light);font-size:12px;font-weight:600;display:none;align-items:center;gap:8px;box-shadow:var(--shadow-lg);cursor:pointer}
-.admin-indicator.show{display:inline-flex}
-.admin-indicator .dot{width:6px;height:6px;border-radius:50%;background:#4CAF50}
-
-.spinner{width:16px;height:16px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
-.flex-gap{display:flex;gap:10px;flex-wrap:wrap}
-.mt-16{margin-top:16px}
-.text-muted{color:var(--text-muted);font-size:13px}
-
-.config-banner{position:fixed;top:0;right:0;left:0;z-index:200;background:#b02a2a;color:white;text-align:center;padding:10px;font-size:13px;font-weight:600;display:none}
-.config-banner.show{display:block}
-.config-banner code{background:rgba(0,0,0,.2);padding:2px 8px;border-radius:4px;font-family:monospace}
-</style>
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 
-<div class="config-banner" id="configBanner">⚠ יש להגדיר את <code>API_BASE</code> בתחילת קובץ ה-HTML לכתובת ה-Worker שלך</div>
+<div class="config-banner" id="configBanner">⚠ יש להגדיר את <code>API_BASE</code> ב-<code>config.js</code></div>
 
 <header class="site-header">
   <div class="nav">
-    <div class="brand" onclick="scrollTo(0,0)">
+    <a href="/" class="brand">
       <div class="brand-mark">ד</div>
       <div class="brand-name">דורון<small>אימון חיים באמונה</small></div>
-    </div>
+    </a>
     <nav class="nav-links">
       <a href="#about">אודות</a>
-      <a href="#courses">מסגרות אימון</a>
+      <a href="#courses">קורסים</a>
       <a href="#offerings">לציבור הרחב</a>
       <a href="#articles">מאמרים</a>
-      <a href="#contact">צור קשר</a>
     </nav>
-    <button class="icon-btn" title="כניסת מנהל" onclick="openAdmin()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-    </button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <a href="/dashboard.html" class="btn btn-outline btn-sm" id="dashboardLink" style="display:none">האזור האישי</a>
+      <a href="/login.html" class="btn btn-primary btn-sm" id="loginLink">התחברות</a>
+      <button class="icon-btn" title="כניסת מנהל" onclick="window.location='/admin.html'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      </button>
+    </div>
   </div>
 </header>
 
@@ -252,9 +46,9 @@ footer a:hover{color:var(--gold-light)}
   <div class="hero-inner">
     <div class="hero-eyebrow reveal reveal-1">מסע של אמונה · הקשבה · צמיחה</div>
     <h1 class="reveal reveal-2">להביט על החיים<br><em>דרך מבט של אמונה</em></h1>
-    <p class="hero-lead reveal reveal-3">אתר מידע ואימון ייחודי. מסגרות אימון אישיות, זוגיות וקבוצתיות, מאמרי יסוד המתחדשים מדי יום, וטור דעה חי על המצב – הכל במקום אחד.</p>
+    <p class="hero-lead reveal reveal-3">קורסי וידאו מקצועיים, מסגרות אימון אישיות וקבוצתיות, מאמרי יסוד שמתחדשים מדי יום.</p>
     <div class="hero-actions reveal reveal-4">
-      <a href="#courses" class="btn btn-primary">מסגרות האימון
+      <a href="#courses" class="btn btn-primary">לכל הקורסים
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       </a>
       <a href="#articles" class="btn btn-outline">קרא מאמרים</a>
@@ -293,14 +87,16 @@ footer a:hover{color:var(--gold-light)}
   </div>
 </section>
 
-<section class="section" id="courses">
+<section class="section section-courses" id="courses">
   <div class="section-inner">
     <div class="section-head">
-      <div class="section-kicker">ארבע מסגרות אימון</div>
-      <h2>בחר את המסגרת שמתאימה לך</h2>
-      <p class="section-lead">כל מסגרת נבנתה במיוחד לצורך אחר – אבל כולן שואבות מאותו מקור של עומק ואמונה.</p>
+      <div class="section-kicker">קורסי וידאו דיגיטליים</div>
+      <h2>הקורסים שלי</h2>
+      <p class="section-lead">כל קורס נבנה במיוחד לליווי של מסע פנימי. צפייה גמישה בקצב שלך, חומרי לימוד נלווים, ומענה אישי לשאלות.</p>
     </div>
-    <div class="courses-grid" id="coursesGrid"></div>
+    <div class="courses-marketplace" id="catalogGrid">
+      <div class="loading-state"><div class="spinner-lg"></div></div>
+    </div>
   </div>
 </section>
 
@@ -309,22 +105,29 @@ footer a:hover{color:var(--gold-light)}
     <div class="section-head">
       <div class="section-kicker">לציבור ולמוסדות חינוך</div>
       <h2>סדנאות, הרצאות ושיעורים</h2>
-      <p class="section-lead" style="color:rgba(245,239,230,.75)">מוזמנים להזמין אצלי תוכן מותאם – לקהילה, לבית ספר, לארגון, או לכל מסגרת אחרת.</p>
+      <p class="section-lead" style="color:rgba(245,239,230,.75)">תוכן מותאם – לקהילה, לבית ספר, לארגון, או לכל מסגרת אחרת.</p>
     </div>
-    <div class="offerings-grid" id="offeringsGrid"></div>
-  </div>
-</section>
-
-<section class="section journey">
-  <div class="section-inner">
-    <div class="journey-card">
-      <div class="section-kicker" style="color:var(--gold-light)">למעוניין בלימוד יומי</div>
-      <h3>מסע למידה אינטרנטי</h3>
-      <p>מסע של חודשים, שבו בכל יום פותחים מושג חדש מתוך חיים של אמונה. תוכן מקורי, קצר ומתמשך, שמגיע לטלפון שלך בכל בוקר. להזמנה ותשלום.</p>
-      <div class="flex-gap">
-        <button class="btn btn-gold" onclick="alert('בקרוב: הרשמה למסע')">הצטרפות למסע
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        </button>
+    <div class="offerings-grid">
+      <div class="offering">
+        <div class="offering-ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h4>סדנאות</h4>
+        <p>סדנאות חווייתיות של מספר שעות, מותאמות למטרת הקבוצה או המוסד.</p>
+      </div>
+      <div class="offering">
+        <div class="offering-ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h20v13H2z"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <h4>הרצאות</h4>
+        <p>הרצאות בנושאי יסודות באמונה, חינוך, זוגיות, ועבודה עצמית.</p>
+      </div>
+      <div class="offering">
+        <div class="offering-ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20"/></svg>
+        </div>
+        <h4>שיעורים קבועים</h4>
+        <p>שיעורים שבועיים או חודשיים לקהילות ומוסדות חינוך.</p>
       </div>
     </div>
   </div>
@@ -339,7 +142,7 @@ footer a:hover{color:var(--gold-light)}
       </div>
       <div class="search-box">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input id="articleSearch" type="search" placeholder="חפש מאמר לפי תוכן..." oninput="renderArticles()">
+        <input id="articleSearch" type="search" placeholder="חפש מאמר..." oninput="renderArticles()">
       </div>
     </div>
     <div class="articles-grid" id="articlesGrid"></div>
@@ -350,548 +153,34 @@ footer a:hover{color:var(--gold-light)}
   <div class="footer-inner">
     <div class="footer-brand">
       <h4>דורון</h4>
-      <p>אימון חיים באמונה – מסגרות אישיות, זוגיות וקבוצתיות, תוכן יומי ותוכן מותאם למוסדות.</p>
-    </div>
-    <div>
-      <h5>מסגרות</h5>
-      <ul>
-        <li><a href="#courses">אימון אישי</a></li>
-        <li><a href="#courses">אימון זוגי</a></li>
-        <li><a href="#courses">אימון קבוצתי</a></li>
-        <li><a href="#courses">קורס משפיעים</a></li>
-      </ul>
+      <p>אימון חיים באמונה – קורסים דיגיטליים, מסגרות אישיות וקבוצתיות, ותוכן מותאם למוסדות.</p>
     </div>
     <div>
       <h5>ניווט</h5>
       <ul>
         <li><a href="#about">אודות</a></li>
-        <li><a href="#offerings">לציבור הרחב</a></li>
+        <li><a href="#courses">קורסים</a></li>
         <li><a href="#articles">מאמרים</a></li>
-        <li><a href="#" onclick="openAdmin();return false">כניסת מנהל</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5>אזור אישי</h5>
+      <ul>
+        <li><a href="/login.html">כניסה לתלמידים</a></li>
+        <li><a href="/admin.html">כניסת מנהל</a></li>
       </ul>
     </div>
   </div>
   <div class="footer-bottom">© <span id="year"></span> · נבנה בעברית ובאהבה</div>
 </footer>
 
-<button class="admin-indicator" id="adminIndicator" onclick="openAdmin()">
-  <span class="dot"></span>
-  <span>מחובר כמנהל · לחץ לפתיחה</span>
-</button>
-
+<!-- Course details modal -->
 <div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this)closeModal()">
   <div class="modal" id="modalBox"></div>
 </div>
 
-<script>
-/* ============================================================
-   ⚙️ הגדרה: כתובת ה-Worker שלך
-   ============================================================
-   אחרי שפרסתת את ה-Worker לראשונה, Cloudflare יתן לך URL
-   בצורה: https://doron-api.<subdomain>.workers.dev
-   
-   החלף את השורה למטה בכתובת המלאה שקיבלת, למשל:
-   const API_BASE = "https://doron-api.bnaya-av.workers.dev";
-   ============================================================ */
-const API_BASE = "REPLACE_WITH_YOUR_WORKER_URL";
-
-document.getElementById('year').textContent = new Date().getFullYear();
-if (API_BASE.includes("REPLACE_WITH")) {
-  document.getElementById('configBanner').classList.add('show');
-  document.body.style.paddingTop = '40px';
-}
-
-const COURSES = [
-  {id:'personal',    title:'אימון אישי',    tag:'01', desc:'ליווי אחד-על-אחד, פגישות שבועיות או דו-שבועיות, מתוך הקשבה עמוקה למה שאתה באמת צריך.'},
-  {id:'couples',     title:'אימון זוגי',    tag:'02', desc:'מסע זוגי שבונה שפה משותפת, הקשבה אמיתית ומרחב לדברים החשובים באמת.'},
-  {id:'group',       title:'אימון קבוצתי',  tag:'03', desc:'למידה בקבוצה קטנה, שבה כל אחד תורם ומקבל. מסלולים של מספר חודשים.'},
-  {id:'influencers', title:'קורס משפיעים',  tag:'04', desc:'קורס ייחודי לאנשים שמובילים אחרים – רבנים, מחנכים, יועצים ומובילי קהילה.'},
-];
-const OFFERINGS = [
-  {id:'workshops', title:'סדנאות',  desc:'סדנאות חווייתיות של מספר שעות, מותאמות למטרת הקבוצה או המוסד.', svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'},
-  {id:'lectures',  title:'הרצאות',  desc:'הרצאות בנושאי יסודות באמונה, חינוך, זוגיות, ועבודה עצמית.', svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h20v13H2z"/><path d="M8 21h8M12 17v4"/></svg>'},
-  {id:'classes',   title:'שיעורים', desc:'שיעורים קבועים – שבועיים או חודשיים – לקהילות ולמוסדות חינוך.', svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20"/></svg>'},
-];
-const ALL_VIDEO_CATEGORIES = [...COURSES, ...OFFERINGS, {id:'journey', title:'מסע למידה', desc:''}];
-
-/* ============================================================
-   API client
-   ============================================================ */
-const TOKEN_KEY = 'doron:token';
-const API = {
-  get token() { try { return localStorage.getItem(TOKEN_KEY); } catch(e) { return null; } },
-  setToken(t) {
-    try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch(e) {}
-  },
-  async req(path, options = {}) {
-    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-    if (this.token) headers.Authorization = 'Bearer ' + this.token;
-    const res = await fetch(API_BASE + path, { ...options, headers });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      if (res.status === 401 && this.token) this.setToken(null);
-      throw new Error(data.error || ('שגיאה (' + res.status + ')'));
-    }
-    return data;
-  },
-  login(user, password) { return this.req('/api/auth/login', { method:'POST', body: JSON.stringify({ user, password }) }); },
-  logout() { return this.req('/api/auth/logout', { method:'POST' }).catch(()=>{}); },
-  changePassword(oldPassword, newPassword) { return this.req('/api/auth/change-password', { method:'POST', body: JSON.stringify({ oldPassword, newPassword }) }); },
-  getVideos() { return this.req('/api/content/videos'); },
-  addVideo(courseId, video) { return this.req('/api/content/videos', { method:'POST', body: JSON.stringify({ courseId, video }) }); },
-  removeVideo(courseId, videoId) { return this.req('/api/content/videos/' + encodeURIComponent(courseId) + '/' + encodeURIComponent(videoId), { method:'DELETE' }); },
-  getArticles() { return this.req('/api/content/articles'); },
-  addArticle(article) { return this.req('/api/content/articles', { method:'POST', body: JSON.stringify({ article }) }); },
-  removeArticle(id) { return this.req('/api/content/articles/' + encodeURIComponent(id), { method:'DELETE' }); },
-};
-
-let isAdmin = !!API.token;
-let cachedVideos = {};
-let cachedArticles = [];
-
-/* ============================================================
-   Video URL parsing (YouTube / Vimeo / direct)
-   ============================================================ */
-function parseVideoUrl(url) {
-  if (!url) return null;
-  url = url.trim();
-  let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/);
-  if (m) return { type:'youtube', id:m[1], embed:'https://www.youtube.com/embed/'+m[1], thumb:'https://img.youtube.com/vi/'+m[1]+'/hqdefault.jpg' };
-  m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  if (m) return { type:'vimeo', id:m[1], embed:'https://player.vimeo.com/video/'+m[1], thumb:null };
-  if (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(url)) return { type:'direct', embed:url, thumb:null };
-  return null;
-}
-
-function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-/* ============================================================
-   Rendering
-   ============================================================ */
-async function loadContent() {
-  try {
-    const [videos, articles] = await Promise.all([API.getVideos(), API.getArticles()]);
-    cachedVideos = videos || {};
-    cachedArticles = articles || [];
-  } catch (e) {
-    console.error('loadContent:', e);
-    cachedVideos = {};
-    cachedArticles = [];
-  }
-  renderCourses();
-  renderArticles();
-}
-
-function renderCourses() {
-  const grid = document.getElementById('coursesGrid');
-  grid.innerHTML = COURSES.map((c,i) => {
-    const vids = cachedVideos[c.id] || [];
-    return `
-      <article class="course reveal reveal-${(i%4)+1}" onclick="openCourse('${c.id}')">
-        <div class="course-num">מסגרת ${c.tag}</div>
-        <h3>${c.title}</h3>
-        <p>${c.desc}</p>
-        <div class="course-footer">
-          ${vids.length ? `<span class="video-badge"><span class="dot"></span>${vids.length} סרטונים</span>` : '<span class="text-muted" style="font-size:12.5px">בקרוב</span>'}
-          <div class="course-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
-        </div>
-      </article>`;
-  }).join('');
-}
-
-function renderOfferings() {
-  document.getElementById('offeringsGrid').innerHTML = OFFERINGS.map(o => `
-    <div class="offering" onclick="openCourse('${o.id}')">
-      <div class="offering-ico">${o.svg}</div>
-      <h4>${o.title}</h4>
-      <p>${o.desc}</p>
-    </div>`).join('');
-}
-
-function renderArticles() {
-  const q = document.getElementById('articleSearch').value.trim().toLowerCase();
-  const grid = document.getElementById('articlesGrid');
-  let shown = cachedArticles;
-  if (q) shown = cachedArticles.filter(a => (a.title + ' ' + a.content).toLowerCase().includes(q));
-  if (!shown.length) {
-    grid.innerHTML = `<div class="empty-state"><div class="ico">✦</div><div>${q ? 'לא נמצאו מאמרים התואמים את החיפוש' : 'המאמרים יעלו לכאן בקרוב'}</div></div>`;
-    return;
-  }
-  grid.innerHTML = shown.slice().sort((a,b) => b.date - a.date).map(a => {
-    const tagClass = a.category === 'opinion' ? 'opinion' : '';
-    const label = a.category === 'opinion' ? 'טור דעה' : 'יסוד באמונה';
-    const preview = (a.content || '').slice(0, 180);
-    const date = new Date(a.date).toLocaleDateString('he-IL');
-    return `<article class="article-card" onclick="openArticle('${a.id}')">
-      <div class="article-meta">
-        <span class="article-tag ${tagClass}">${label}</span>
-        <span class="article-date">${date}</span>
-      </div>
-      <h4>${escapeHtml(a.title)}</h4>
-      <p>${escapeHtml(preview)}${(a.content || '').length > 180 ? '…' : ''}</p>
-    </article>`;
-  }).join('');
-}
-
-/* ============================================================
-   Modal
-   ============================================================ */
-function openModalHtml(html, wide = false) {
-  const backdrop = document.getElementById('modalBackdrop');
-  const box = document.getElementById('modalBox');
-  box.className = 'modal' + (wide ? ' wide' : '');
-  box.innerHTML = html;
-  backdrop.classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeModal() {
-  document.getElementById('modalBackdrop').classList.remove('open');
-  document.body.style.overflow = '';
-}
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-
-function openCourse(courseId) {
-  const cat = ALL_VIDEO_CATEGORIES.find(c => c.id === courseId);
-  if (!cat) return;
-  const list = cachedVideos[courseId] || [];
-  let body;
-  if (!list.length) {
-    body = `<div class="empty-state" style="grid-column:unset"><div class="ico">▶</div><div>עדיין לא הועלו סרטונים למסגרת זו</div><div class="text-muted mt-16">${isAdmin ? 'פתח את פאנל הניהול כדי להוסיף סרטונים' : 'חזור בקרוב'}</div></div>`;
-  } else {
-    body = list.map(v => {
-      const parsed = parseVideoUrl(v.url);
-      const player = !parsed ? `<div class="form-error">לא ניתן להציג את הסרטון</div>` :
-        parsed.type === 'direct' ? `<div class="video-player"><video controls src="${escapeHtml(parsed.embed)}"></video></div>` :
-        `<div class="video-player"><iframe src="${parsed.embed}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe></div>`;
-      return `<div style="margin-bottom:26px">
-        ${player}
-        <h4 style="font-size:20px;color:var(--navy);margin-bottom:6px">${escapeHtml(v.title)}</h4>
-        ${v.description ? `<p style="color:var(--text-soft);line-height:1.7;font-size:14.5px">${escapeHtml(v.description)}</p>` : ''}
-      </div>`;
-    }).join('');
-  }
-  openModalHtml(`
-    <div class="modal-head">
-      <div><div class="text-muted" style="font-size:12px;letter-spacing:.15em;font-weight:700;color:var(--gold-dark)">מסגרת</div><h3>${cat.title}</h3></div>
-      <button class="modal-close" onclick="closeModal()" aria-label="סגור">✕</button>
-    </div>
-    <div class="modal-body">${body}</div>`, true);
-}
-
-function openArticle(id) {
-  const a = cachedArticles.find(x => x.id === id);
-  if (!a) return;
-  const label = a.category === 'opinion' ? 'טור דעה' : 'יסוד באמונה';
-  openModalHtml(`
-    <div class="modal-head">
-      <div>
-        <div class="text-muted" style="font-size:12px;letter-spacing:.15em;font-weight:700;color:var(--gold-dark)">${label} · ${new Date(a.date).toLocaleDateString('he-IL')}</div>
-        <h3>${escapeHtml(a.title)}</h3>
-      </div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="font-size:16px;line-height:1.85;color:var(--text-soft);white-space:pre-wrap">${escapeHtml(a.content)}</div>
-    </div>`, true);
-}
-
-/* ============================================================
-   Admin login
-   ============================================================ */
-function openAdmin() {
-  if (isAdmin) return openAdminPanel();
-  openModalHtml(`
-    <div class="modal-head"><h3>כניסת מנהל</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
-    <div class="modal-body">
-      <div id="loginError"></div>
-      <form id="loginForm" onsubmit="return doLogin(event)">
-        <div class="field">
-          <label>שם משתמש</label>
-          <input id="loginUser" type="text" autocomplete="username" value="doron" required>
-        </div>
-        <div class="field">
-          <label>סיסמה</label>
-          <input id="loginPass" type="password" autocomplete="current-password" required autofocus>
-          <div class="hint">סיסמת ברירת מחדל ראשונית: 12345678 – מומלץ לשנות מיד לאחר ההתחברות.</div>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
-          <span id="loginBtnLabel">התחבר</span>
-        </button>
-      </form>
-    </div>`);
-}
-
-async function doLogin(ev) {
-  ev.preventDefault();
-  const user = document.getElementById('loginUser').value.trim();
-  const pass = document.getElementById('loginPass').value;
-  const err = document.getElementById('loginError');
-  const label = document.getElementById('loginBtnLabel');
-  label.innerHTML = '<span class="spinner"></span>';
-  try {
-    const res = await API.login(user, pass);
-    API.setToken(res.token);
-    isAdmin = true;
-    document.getElementById('adminIndicator').classList.add('show');
-    openAdminPanel();
-  } catch (e) {
-    err.innerHTML = '<div class="form-error">' + escapeHtml(e.message) + '</div>';
-    label.textContent = 'התחבר';
-  }
-  return false;
-}
-
-async function logout() {
-  await API.logout();
-  API.setToken(null);
-  isAdmin = false;
-  document.getElementById('adminIndicator').classList.remove('show');
-  closeModal();
-}
-
-/* ============================================================
-   Admin panel
-   ============================================================ */
-let adminTab = 'videos';
-let activeCourseId = 'personal';
-
-function openAdminPanel() {
-  openModalHtml(`
-    <div class="modal-head">
-      <div><div class="text-muted" style="font-size:12px;letter-spacing:.15em;font-weight:700;color:var(--gold-dark)">פאנל ניהול</div><h3>ברוך הבא, דורון</h3></div>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-ghost btn-sm" onclick="logout()">התנתק</button>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-    </div>
-    <div class="modal-body">
-      <div class="admin-tabs">
-        <button class="admin-tab ${adminTab==='videos'?'active':''}" onclick="switchTab('videos')">🎬 סרטונים</button>
-        <button class="admin-tab ${adminTab==='articles'?'active':''}" onclick="switchTab('articles')">📝 מאמרים</button>
-        <button class="admin-tab ${adminTab==='settings'?'active':''}" onclick="switchTab('settings')">⚙ הגדרות</button>
-      </div>
-      <div id="adminBody"></div>
-    </div>`, true);
-  renderAdminBody();
-}
-
-function switchTab(t) { adminTab = t; renderAdminBody(); }
-
-function renderAdminBody() {
-  const tabs = ['videos','articles','settings'];
-  document.querySelectorAll('.admin-tab').forEach((b,i) => b.classList.toggle('active', tabs[i] === adminTab));
-  const body = document.getElementById('adminBody');
-  if (adminTab === 'videos') body.innerHTML = renderVideosTab();
-  else if (adminTab === 'articles') body.innerHTML = renderArticlesTab();
-  else body.innerHTML = renderSettingsTab();
-}
-
-function renderVideosTab() {
-  const pills = ALL_VIDEO_CATEGORIES.map(c => {
-    const count = (cachedVideos[c.id] || []).length;
-    return `<button class="course-pill ${c.id===activeCourseId?'active':''}" onclick="selectCourse('${c.id}')">
-      ${c.title}${count ? `<span class="count">${count}</span>` : ''}
-    </button>`;
-  }).join('');
-  const currentList = cachedVideos[activeCourseId] || [];
-  const active = ALL_VIDEO_CATEGORIES.find(c => c.id === activeCourseId);
-  const items = currentList.length ? currentList.map(v => {
-    const parsed = parseVideoUrl(v.url);
-    const thumb = parsed && parsed.thumb ? `<img src="${parsed.thumb}" alt="">` : '▶';
-    return `<div class="video-item">
-      <div class="video-thumb">${thumb}</div>
-      <div class="video-info">
-        <strong>${escapeHtml(v.title)}</strong>
-        <small>${parsed ? parsed.type.toUpperCase() : 'קישור'} · ${new Date(v.addedAt).toLocaleDateString('he-IL')}</small>
-      </div>
-      <div class="video-actions">
-        <button class="btn-icon-danger" onclick="removeVideo('${activeCourseId}','${v.id}')" title="מחק">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-        </button>
-      </div>
-    </div>`;
-  }).join('') : '<div class="empty-state" style="grid-column:unset"><div class="ico">🎬</div><div>טרם הועלו סרטונים למסגרת זו</div></div>';
-
-  return `
-    <h4 style="font-size:15px;color:var(--navy);margin-bottom:10px">בחר מסגרת</h4>
-    <div class="course-selector">${pills}</div>
-    <div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px">
-      <h4 style="font-size:15px;color:var(--navy);margin-bottom:12px">הוסף סרטון ל"${active.title}"</h4>
-      <div id="addVideoMsg"></div>
-      <div class="field">
-        <label>כותרת הסרטון</label>
-        <input id="vTitle" placeholder="לדוגמה: שיעור 1 — מהי אמונה">
-      </div>
-      <div class="field">
-        <label>קישור לסרטון</label>
-        <input id="vUrl" dir="ltr" placeholder="https://youtube.com/watch?v=... או https://vimeo.com/...">
-        <div class="hint">תומך ביוטיוב, וימאו, או קישור ישיר לקובץ MP4.</div>
-      </div>
-      <div class="field">
-        <label>תיאור קצר (אופציונלי)</label>
-        <textarea id="vDesc" placeholder="כמה שורות על הסרטון..."></textarea>
-      </div>
-      <button class="btn btn-primary" id="addVideoBtn" onclick="addVideo()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        הוסף לספריה
-      </button>
-    </div>
-    <h4 style="font-size:15px;color:var(--navy);margin-bottom:10px">סרטונים במסגרת "${active.title}" (${currentList.length})</h4>
-    <div class="video-list">${items}</div>`;
-}
-
-function selectCourse(id) { activeCourseId = id; renderAdminBody(); }
-
-async function addVideo() {
-  const title = document.getElementById('vTitle').value.trim();
-  const url = document.getElementById('vUrl').value.trim();
-  const desc = document.getElementById('vDesc').value.trim();
-  const msg = document.getElementById('addVideoMsg');
-  const btn = document.getElementById('addVideoBtn');
-  if (!title) return msg.innerHTML = '<div class="form-error">יש להזין כותרת</div>';
-  if (!url) return msg.innerHTML = '<div class="form-error">יש להזין קישור לסרטון</div>';
-  if (!parseVideoUrl(url)) return msg.innerHTML = '<div class="form-error">הקישור לא תקין. יוטיוב / וימאו / קובץ MP4.</div>';
-  btn.innerHTML = '<span class="spinner"></span> מעלה...';
-  try {
-    const res = await API.addVideo(activeCourseId, { title, url, description: desc });
-    cachedVideos = res.videos || cachedVideos;
-    msg.innerHTML = '<div class="form-success">הסרטון נוסף בהצלחה</div>';
-    setTimeout(() => { renderAdminBody(); renderCourses(); }, 400);
-  } catch (e) {
-    msg.innerHTML = '<div class="form-error">' + escapeHtml(e.message) + '</div>';
-    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> הוסף לספריה';
-  }
-}
-
-async function removeVideo(courseId, vid) {
-  if (!confirm('למחוק את הסרטון?')) return;
-  try {
-    await API.removeVideo(courseId, vid);
-    if (cachedVideos[courseId]) cachedVideos[courseId] = cachedVideos[courseId].filter(v => v.id !== vid);
-    renderAdminBody();
-    renderCourses();
-  } catch (e) { alert(e.message); }
-}
-
-function renderArticlesTab() {
-  const list = cachedArticles;
-  const items = list.length ? list.slice().sort((a,b) => b.date - a.date).map(a => {
-    const label = a.category === 'opinion' ? 'טור דעה' : 'יסוד באמונה';
-    return `<div class="video-item">
-      <div class="video-thumb" style="background:${a.category==='opinion'?'var(--gold)':'var(--navy)'};color:${a.category==='opinion'?'var(--navy)':'var(--gold)'}">
-        <span style="font-family:'Frank Ruhl Libre',serif;font-size:20px">${a.category==='opinion'?'"':'✦'}</span>
-      </div>
-      <div class="video-info">
-        <strong>${escapeHtml(a.title)}</strong>
-        <small>${label} · ${new Date(a.date).toLocaleDateString('he-IL')}</small>
-      </div>
-      <div class="video-actions">
-        <button class="btn-icon-danger" onclick="removeArticle('${a.id}')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6"/></svg>
-        </button>
-      </div>
-    </div>`;
-  }).join('') : '<div class="empty-state" style="grid-column:unset"><div class="ico">📝</div><div>טרם נוספו מאמרים</div></div>';
-
-  return `
-    <div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px">
-      <h4 style="font-size:15px;color:var(--navy);margin-bottom:12px">הוסף מאמר חדש</h4>
-      <div id="addArticleMsg"></div>
-      <div class="field"><label>כותרת</label><input id="aTitle" placeholder="כותרת המאמר"></div>
-      <div class="field"><label>קטגוריה</label>
-        <select id="aCat">
-          <option value="foundation">יסוד באמונה (מאמר יומי)</option>
-          <option value="opinion">טור דעה על המצב</option>
-        </select>
-      </div>
-      <div class="field"><label>תוכן</label><textarea id="aContent" rows="6" placeholder="כתוב כאן את תוכן המאמר..."></textarea></div>
-      <button class="btn btn-primary" id="addArticleBtn" onclick="addArticle()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        פרסם מאמר
-      </button>
-    </div>
-    <h4 style="font-size:15px;color:var(--navy);margin-bottom:10px">מאמרים קיימים (${list.length})</h4>
-    <div class="video-list">${items}</div>`;
-}
-
-async function addArticle() {
-  const title = document.getElementById('aTitle').value.trim();
-  const cat = document.getElementById('aCat').value;
-  const content = document.getElementById('aContent').value.trim();
-  const msg = document.getElementById('addArticleMsg');
-  const btn = document.getElementById('addArticleBtn');
-  if (!title || !content) return msg.innerHTML = '<div class="form-error">יש למלא כותרת ותוכן</div>';
-  btn.innerHTML = '<span class="spinner"></span> מפרסם...';
-  try {
-    await API.addArticle({ title, category: cat, content });
-    cachedArticles = await API.getArticles();
-    msg.innerHTML = '<div class="form-success">המאמר פורסם</div>';
-    setTimeout(() => { renderAdminBody(); renderArticles(); }, 400);
-  } catch (e) {
-    msg.innerHTML = '<div class="form-error">' + escapeHtml(e.message) + '</div>';
-    btn.innerHTML = 'פרסם מאמר';
-  }
-}
-
-async function removeArticle(id) {
-  if (!confirm('למחוק את המאמר?')) return;
-  try {
-    await API.removeArticle(id);
-    cachedArticles = cachedArticles.filter(a => a.id !== id);
-    renderAdminBody();
-    renderArticles();
-  } catch (e) { alert(e.message); }
-}
-
-function renderSettingsTab() {
-  return `
-    <div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px">
-      <h4 style="font-size:16px;color:var(--navy);margin-bottom:4px">שינוי סיסמה</h4>
-      <p class="text-muted" style="margin-bottom:14px">הסיסמה נשמרת מוצפנת (SHA-256) ב-Cloudflare KV. מומלץ לשנות מיד את סיסמת ברירת המחדל.</p>
-      <div id="pwMsg"></div>
-      <div class="field"><label>סיסמה נוכחית</label><input id="pwOld" type="password" autocomplete="current-password"></div>
-      <div class="field"><label>סיסמה חדשה</label><input id="pwNew" type="password" autocomplete="new-password"><div class="hint">לפחות 6 תווים</div></div>
-      <div class="field"><label>אימות סיסמה חדשה</label><input id="pwNew2" type="password" autocomplete="new-password"></div>
-      <button class="btn btn-primary" id="pwBtn" onclick="changePassword()">עדכן סיסמה</button>
-    </div>
-    <div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:18px">
-      <h4 style="font-size:16px;color:var(--navy);margin-bottom:8px">מידע על המערכת</h4>
-      <p class="text-muted" style="margin-bottom:6px">Frontend: Cloudflare Pages · API: Cloudflare Worker · אחסון: Workers KV</p>
-      <p class="text-muted">כתובת ה-API: <code style="font-family:monospace;font-size:11px;background:var(--cream-dark);padding:2px 6px;border-radius:4px">${escapeHtml(API_BASE)}</code></p>
-    </div>`;
-}
-
-async function changePassword() {
-  const oldP = document.getElementById('pwOld').value;
-  const newP = document.getElementById('pwNew').value;
-  const newP2 = document.getElementById('pwNew2').value;
-  const msg = document.getElementById('pwMsg');
-  const btn = document.getElementById('pwBtn');
-  if (!oldP || !newP) return msg.innerHTML = '<div class="form-error">יש למלא את כל השדות</div>';
-  if (newP.length < 6) return msg.innerHTML = '<div class="form-error">סיסמה חדשה חייבת להיות באורך 6 תווים לפחות</div>';
-  if (newP !== newP2) return msg.innerHTML = '<div class="form-error">הסיסמה החדשה ואימות הסיסמה אינם תואמים</div>';
-  btn.innerHTML = '<span class="spinner"></span> מעדכן...';
-  try {
-    await API.changePassword(oldP, newP);
-    msg.innerHTML = '<div class="form-success">הסיסמה עודכנה בהצלחה 🎉</div>';
-    document.getElementById('pwOld').value = '';
-    document.getElementById('pwNew').value = '';
-    document.getElementById('pwNew2').value = '';
-    btn.innerHTML = 'עדכן סיסמה';
-  } catch (e) {
-    msg.innerHTML = '<div class="form-error">' + escapeHtml(e.message) + '</div>';
-    btn.innerHTML = 'עדכן סיסמה';
-  }
-}
-
-/* ============================================================
-   Boot
-   ============================================================ */
-(async function init() {
-  renderOfferings();
-  if (isAdmin) document.getElementById('adminIndicator').classList.add('show');
-  await loadContent();
-})();
-</script>
+<script src="/config.js"></script>
+<script src="/api.js"></script>
+<script src="/main.js"></script>
 </body>
 </html>

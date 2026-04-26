@@ -1,166 +1,92 @@
 # 🌿 אתר דורון — אימון חיים באמונה
 
-אתר מלא עם פאנל ניהול לדורון, בנוי לפריסה אוטומטית מהטלפון על Cloudflare Pages + Workers + KV.
+מערכת LMS מלאה (Learning Management System) לדורון, עם:
+- **קטלוג קורסים** למכירה עם דפי מוצר יפים
+- **תשלומים אונליין** דרך iCount + חשבונית ישראלית
+- **דשבורד אישי לתלמיד** עם נגן וידאו, מעקב התקדמות, חומרים נלווים, צ'אט עם דורון, ותעודת סיום
+- **פאנל ניהול מורחב** לדורון: קורסים, שיעורים, חומרים, תלמידים, הזמנות, צ'אט, הגדרות
+- **שליחת מייל אוטומטית** עם פרטי גישה דרך Resend
 
-## 🏗 ארכיטקטורה
+## 📁 מבנה הפרויקט
 
 ```
 doron-site/
-├── site/                           ← Frontend (Cloudflare Pages)
-│   └── index.html                  — עמוד יחיד HTML/CSS/JS
-├── worker/                         ← Backend API (Cloudflare Worker)
-│   ├── src/index.js                — קוד ה-Worker
-│   ├── wrangler.toml               — קונפיגורציה
+├── site/                       ← Frontend (Cloudflare Pages)
+│   ├── index.html              — עמוד הבית עם קטלוג קורסים
+│   ├── login.html              — כניסת תלמיד
+│   ├── dashboard.html          — דשבורד תלמיד (קורסים/וידאו/צ'אט)
+│   ├── admin.html              — פאנל ניהול מלא
+│   ├── styles.css              — עיצוב משותף
+│   ├── config.js               — כתובת ה-Worker
+│   ├── api.js                  — מעטפת לקריאות API
+│   └── main.js                 — לוגיקת עמוד הבית
+├── worker/                     ← Backend API (Cloudflare Worker)
+│   ├── src/index.js            — כל ה-API
+│   ├── wrangler.toml
 │   └── package.json
 └── .github/workflows/
-    ├── deploy-worker.yml           — פריסת Worker בכל push
-    └── deploy-pages.yml            — פריסת Pages בכל push
+    ├── deploy-worker.yml       — פריסה אוטומטית של Worker
+    └── deploy-pages.yml        — פריסה אוטומטית של Pages
 ```
 
-## 📱 התקנה מהטלפון (שלב-אחר-שלב)
+## 🚀 שדרוג מגירסה הקודמת
 
-### 1. יצירת Repo ב-GitHub
-- פתח את אפליקציית GitHub בטלפון → **New repository** → שם: `doron-site`
-- העלה את כל הקבצים של הפרויקט (כולל התיקיות `.github`, `site`, `worker`)
+אם כבר פרסת את הגרסה הראשונה (עם `index.html` יחיד):
 
-### 2. יצירת KV namespace ב-Cloudflare
-- היכנס ל-**dash.cloudflare.com** (מהדפדפן בטלפון)
-- **Workers & Pages** → **KV** → **Create a namespace**
-- שם: `doron-kv` → Create
-- העתק את ה-**Namespace ID** שמופיע ברשימה
+1. **דחוף את כל הקבצים החדשים** ל-GitHub (commit + push)
+2. ה-GitHub Actions יפרוס אוטומטית את ה-Worker וה-Pages
+3. **תכנס ל-`/admin.html`** ולשונית "הגדרות" כדי להוסיף:
+   - **API Key של Resend** (לשליחת מיילים) — הירשם בחינם ב-[resend.com](https://resend.com)
+   - **פרטי iCount** (לתשלומים) — אם יש לך חשבון ב-iCount
+4. **צור קורסים בלשונית "קורסים"** עם תיאור, מחיר, ותכונות
+5. **הוסף שיעורי וידאו** בלשונית "תוכן"
+6. **פרסם את הקורסים** (טוגל "מפורסם") — והם יופיעו בעמוד הראשי
 
-### 3. עדכון `worker/wrangler.toml`
-ערוך את הקובץ (דרך GitHub בדפדפן) והחלף את `REPLACE_WITH_YOUR_KV_ID` ב-ID שהעתקת:
+## 🔧 הגדרות ראשוניות
 
-```toml
-[[kv_namespaces]]
-binding = "KV"
-id = "abc123def456..."   ← ה-ID שלך כאן
-```
+### Resend (שליחת מייל)
+1. הירשם ב-[resend.com](https://resend.com) (חינם עד 3000 מיילים בחודש)
+2. ב-Resend Dashboard → API Keys → Create API Key → העתק
+3. בפאנל הניהול → הגדרות → Resend → הדבק את ה-API Key
+4. שלח **מייל בדיקה** כדי לוודא שזה עובד
+5. **(אופציונלי)** להחליף את כתובת השולח לדומיין שלך, צריך לאמת DNS ב-Resend
 
-### 4. יצירת API Token ל-Cloudflare
-- בדשבורד: **My Profile** (פינה ימנית עליונה) → **API Tokens** → **Create Token**
-- בחר בתבנית **"Edit Cloudflare Workers"**
-- Continue → Continue → Create Token
-- העתק את הטוקן (מוצג פעם אחת בלבד!)
-- העתק גם את ה-**Account ID** (זמין בדף הראשי של Workers & Pages)
+### iCount (תשלומים)
+1. הירשם ב-iCount או בקש פרטי API ממנהל החשבון שלך
+2. תקבל: **Company ID**, **שם משתמש**, **סיסמה**
+3. בפאנל הניהול → הגדרות → iCount → הזן את הפרטים
+4. **חשוב!** הגדר ב-iCount Webhook URL לכתובת:
+   `https://YOUR-WORKER.workers.dev/api/checkout/icount-webhook`
+   (הוא ישלח עדכון אוטומטי כשתשלום מצליח)
 
-### 5. הוספת Secrets ל-GitHub
-ב-GitHub: **Settings → Secrets and variables → Actions → New repository secret**
+## 💼 איך זה עובד מנקודת מבט של הלקוח
 
-| Name | Value |
-|------|-------|
-| `CLOUDFLARE_API_TOKEN` | הטוקן שיצרת בשלב 4 |
-| `CLOUDFLARE_ACCOUNT_ID` | ה-Account ID מהדשבורד |
+1. **לקוח רואה קורס** בעמוד הבית → לוחץ "פרטים נוספים"
+2. **רואה תיאור מלא ומחיר** → לוחץ "רכוש עכשיו"
+3. **ממלא שם + אימייל + טלפון** → מועבר לעמוד תשלום של iCount
+4. **משלם** → iCount שולח Webhook → ה-Worker:
+   - יוצר משתמש חדש עם **סיסמה אקראית קצרה (8 תווים)**
+   - משייך את הקורס לחשבון
+   - שולח מייל ב-HTML יפה עם פרטי הגישה
+5. **לקוח נכנס ל-`/login.html`** עם המייל והסיסמה
+6. **רואה את הקורסים שלו** בדשבורד, לחיצה על קורס פותחת את הנגן
+7. **צופה בשיעורים, מסמן כמושלמים, מוריד חומרים, שולח שאלות לדורון**
+8. **כשמסיים את כל השיעורים** — מקבל **תעודת סיום אוטומטית** (ניתנת להדפסה)
 
-### 6. הפעלת Workflows
-ב-GitHub → **Actions** → אם מופיעה הודעה, לחץ **"I understand my workflows, enable them"**.
+## 🛡 אבטחה
 
-### 7. פריסת ה-Worker
-- **Actions** → **Deploy Worker** → **Run workflow** → **Run workflow** (כפתור ירוק)
-- המתן ~30 שניות לסיום
-- הכתובת תהיה: `https://doron-api.<subdomain>.workers.dev`
-- ודא שזה עובד: פתח `<url>/api/health` בדפדפן — צריך לראות `{"ok":true,...}`
+- סיסמאות מוצפנות ב-SHA-256 (לא מאוחסנות בטקסט גלוי)
+- טוקנים נשמרים ב-KV עם TTL של 30 ימים
+- כל ה-API מוגן ב-CORS
+- מנהל לא יכול לראות סיסמאות תלמידים — רק לאפס
 
-### 8. עדכון כתובת ה-API בפרונטאנד
-ערוך את `site/index.html`, מצא את השורה:
-```js
-const API_BASE = "REPLACE_WITH_YOUR_WORKER_URL";
-```
-והחלף ב-URL שקיבלת, למשל:
-```js
-const API_BASE = "https://doron-api.bnaya-av.workers.dev";
-```
+## 📝 שינוי סיסמת מנהל
 
-### 9. פריסת Pages (בחר דרך אחת)
+ברירת המחדל: `doron` / `12345678`
+**יש לשנות מיד!** בפאנל הניהול → הגדרות → "שינוי סיסמת מנהל"
 
-**אופציה א': ידנית דרך GitHub Actions (מומלץ — הכל מהטלפון)**
-- **Actions** → **Deploy Pages** → **Run workflow**
-- Cloudflare יצר פרויקט בשם `doron-site` באופן אוטומטי
-- הכתובת: `https://doron-site.pages.dev`
+## 🆘 תקלות נפוצות
 
-**אופציה ב': חיבור ישיר ב-Cloudflare dashboard (חד-פעמי, אוטומטי לנצח)**
-- Cloudflare → **Workers & Pages** → **Create application** → **Pages** → **Connect to Git**
-- בחר את ה-repo `doron-site`
-- Build output directory: `site`
-- Deploy → כל push ייצר deploy אוטומטי
-
-### 10. הגבלת CORS (אופציונלי לאחר פריסה)
-לאחר שהאתר חי, ערוך את `worker/wrangler.toml`:
-```toml
-[vars]
-ALLOWED_ORIGINS = "https://doron-site.pages.dev"
-```
-Push → ה-Worker יתעדכן אוטומטית.
-
----
-
-## 🔐 כניסה ראשונה
-
-- האתר: `https://doron-site.pages.dev`
-- לחץ על סמל המנעול בפינה העליונה
-- שם משתמש: `doron`
-- סיסמה: `12345678`
-- **שנה מיד את הסיסמה** בכרטיסיית "הגדרות" בפאנל
-
----
-
-## 🎥 העלאת סרטונים
-
-בפאנל הניהול → **סרטונים**:
-1. בחר מסגרת (אימון אישי / זוגי / קבוצתי / קורס משפיעים / סדנאות / הרצאות / שיעורים / מסע למידה)
-2. הדבק כתובת של:
-   - **YouTube** — כל פורמט (`youtu.be/...`, `youtube.com/watch?v=...`, shorts, embed)
-   - **Vimeo** — `vimeo.com/123456`
-   - **קובץ וידאו ישיר** — `https://.../video.mp4`
-3. כותרת + תיאור → הוסף
-4. הסרטון מופיע מיד בעמוד הציבורי
-
----
-
-## 📝 ניהול מאמרים
-
-בפאנל → **מאמרים** → הוסף מאמר:
-- **יסוד באמונה** (מאמרים יומיים)
-- **טור דעה על המצב**
-
-כל המאמרים מופיעים בעמוד הציבורי עם חיפוש לפי תוכן.
-
----
-
-## 🔧 פיתוח מקומי (למי שיש מחשב)
-
-```bash
-# Worker
-cd worker
-npm install
-npx wrangler kv namespace create doron-kv   # פעם אחת בלבד
-# עדכן את ה-ID ב-wrangler.toml
-npx wrangler dev
-
-# Frontend
-cd site
-npx serve .
-```
-
----
-
-## 💡 טיפים
-
-- **סקלבליות:** Worker חינמי מכסה 100,000 בקשות/יום
-- **KV:** חינמי עד 1,000 כתיבות/יום — יותר מדי לאתר תוכן
-- **גיבוי:** `wrangler kv key list --binding=KV` להצגת כל המפתחות
-- **לוגים:** Dashboard → Workers → doron-api → Logs
-
----
-
-## 🆘 בעיות נפוצות
-
-| שגיאה | פתרון |
-|-------|-------|
-| `API_BASE` אדום למעלה | לא עדכנת את הכתובת ב-`site/index.html` |
-| "לא מחובר" אחרי login | CORS חסום — בדוק שה-Origin מותר ב-wrangler.toml |
-| Worker deploy נכשל | Secrets של GitHub לא הוגדרו נכון |
-| 404 על API | שכחת לפרוס את ה-Worker אחרי השינוי |
-
-בהצלחה 🌿
+- **"Failed to fetch"** ⇒ בדוק ש-`config.js` מצביע על ה-Worker הנכון
+- **מייל לא נשלח** ⇒ בדוק ב-`Resend Dashboard → Logs` ובדוק את ה-Worker logs ב-Cloudflare
+- **תשלום לא מפעיל את הקורס** ⇒ ייתכן שה-Webhook לא הוגדר ב-iCount, אפשר להפעיל ידנית בלשונית "הזמנות"

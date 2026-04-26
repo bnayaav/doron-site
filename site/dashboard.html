@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>האזור האישי · דורון</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Assistant:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="dash-shell">
+  <header class="dash-header">
+    <div class="dash-header-inner">
+      <a href="/" class="brand">
+        <div class="brand-mark">ד</div>
+        <div class="brand-name">דורון</div>
+      </a>
+      <div class="dash-user">
+        <div class="dash-avatar" id="avatar">?</div>
+        <div class="dash-user-info">
+          <strong id="userName">טוען...</strong>
+          <small id="userEmail"></small>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="doLogout()" title="התנתק">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+  
+  <div class="dash-content">
+    <h1 class="dash-h1" id="welcomeHeader">שלום!</h1>
+    <p class="dash-sub">ברוך הבא לאזור האישי שלך. כל הקורסים, התקדמות הלימוד, וההודעות — במקום אחד.</p>
+    
+    <div class="dash-tabs" id="tabs">
+      <button class="dash-tab active" data-tab="courses">הקורסים שלי</button>
+      <button class="dash-tab" data-tab="chat">צ'אט עם דורון</button>
+      <button class="dash-tab" data-tab="settings">הגדרות</button>
+    </div>
+    
+    <!-- Tab: Courses -->
+    <div class="dash-pane" id="pane-courses">
+      <div id="myCoursesContainer"><div class="loading-state"><div class="spinner-lg"></div></div></div>
+    </div>
+    
+    <!-- Tab: Course player (hidden, shown when viewing a course) -->
+    <div class="dash-pane" id="pane-player" style="display:none">
+      <div style="margin-bottom:14px">
+        <button class="btn btn-ghost btn-sm" onclick="showTab('courses')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          חזרה לרשימת הקורסים
+        </button>
+      </div>
+      <div id="playerContainer"></div>
+    </div>
+    
+    <!-- Tab: Chat -->
+    <div class="dash-pane" id="pane-chat" style="display:none">
+      <div class="chat-shell">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+          <input type="text" id="chatInput" placeholder="כתוב הודעה לדורון...">
+          <button onclick="sendChat()" id="chatSendBtn">שלח</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Tab: Settings -->
+    <div class="dash-pane" id="pane-settings" style="display:none">
+      <div class="section-card">
+        <h4 style="margin-bottom:14px">פרטים אישיים</h4>
+        <div class="field-group">
+          <div class="field"><label>שם מלא</label><input type="text" id="setName" disabled></div>
+          <div class="field"><label>אימייל</label><input type="email" id="setEmail" disabled></div>
+        </div>
+        <p class="text-muted">לעדכון פרטים אישיים, אנא צור קשר עם דורון</p>
+      </div>
+      <div class="section-card">
+        <h4 style="margin-bottom:14px">שינוי סיסמה</h4>
+        <div id="pwdMsg"></div>
+        <div class="field"><label>סיסמה נוכחית</label><input type="password" id="oldPwd"></div>
+        <div class="field-group">
+          <div class="field"><label>סיסמה חדשה</label><input type="password" id="newPwd"></div>
+          <div class="field"><label>אישור סיסמה</label><input type="password" id="newPwd2"></div>
+        </div>
+        <button class="btn btn-primary" onclick="changePassword()" id="changePwdBtn">עדכון סיסמה</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/config.js"></script>
+<script src="/api.js"></script>
+<script>
+let me = null;
+let activePlayerCourse = null;
+let activePlayerVideos = [];
+let activePlayerVideoIdx = 0;
+
+if (!Auth.studentToken) {
+  window.location = '/login.html';
+}
+
+document.querySelectorAll('.dash-tab').forEach(t => {
+  t.addEventListener('click', () => showTab(t.dataset.tab));
+});
+
+document.getElementById('chatInput').addEventListener('keypress', e => {
+  if (e.key === 'Enter') sendChat();
+});
+
+loadMe();
+
+async function loadMe() {
+  try {
+    me = await API.me();
+    if (me.role !== 'student') {
+      // Admin should use admin panel
+      Auth.setStudentToken(null);
+      window.location = '/login.html';
+      return;
+    }
+    const u = me.user;
+    document.getElementById('userName').textContent = u.fullName || '';
+    document.getElementById('userEmail').textContent = u.email || '';
+    document.getElementById('avatar').textContent = (u.fullName || '?').charAt(0).toUpperCase();
+    document.getElementById('welcomeHeader').textContent = 'שלום, ' + (u.fullName || '').split(' ')[0] + '!';
+    document.getElementById('setName').value = u.fullName || '';
+    document.getElementById('setEmail').value = u.email || '';
+    renderMyCourses();
+  } catch (err) {
+    if (err.status === 401) {
+      Auth.setStudentToken(null);
+      window.location = '/login.html';
+      return;
+    }
+    document.getElementById('myCoursesContainer').innerHTML = `<div class="empty-state"><p style="color:var(--danger)">שגיאה: ${escapeHtml(err.message)}</p></div>`;
+  }
+}
+
+function renderMyCourses() {
+  const cont = document.getElementById('myCoursesContainer');
+  if (!me.courses || !me.courses.length) {
+    cont.innerHTML = `
+      <div class="empty-state">
+        <h3 style="font-family:'Frank Ruhl Libre',serif;font-size:22px;color:var(--navy);margin-bottom:10px">עדיין לא רכשת קורסים</h3>
+        <p>גלה את הקורסים הזמינים בדף הראשי.</p>
+        <a href="/#courses" class="btn btn-primary mt-16">לעיון בקורסים</a>
+      </div>`;
+    return;
+  }
+  cont.innerHTML = '<div class="my-courses">' + me.courses.map(c => {
+    const initial = (c.title || 'ק').charAt(0);
+    const cover = c.coverImage 
+      ? `<img src="${escapeHtml(c.coverImage)}">`
+      : escapeHtml(initial);
+    const completed = c.progressPct === 100;
+    return `
+      <div class="my-course" onclick="openPlayer('${c.id}')">
+        <div class="my-course-cover">${cover}</div>
+        <div class="my-course-body">
+          <h3>${escapeHtml(c.title)}</h3>
+          <div class="progress-row">
+            <span>${c.completedVideos}/${c.totalVideos} שיעורים</span>
+            <strong>${c.progressPct}%</strong>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${c.progressPct}%"></div></div>
+          <div class="my-course-actions">
+            <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openPlayer('${c.id}')">
+              ${c.completedVideos > 0 ? 'המשך לימוד' : 'התחל ללמוד'}
+            </button>
+            ${completed ? `<button class="btn btn-gold btn-sm" onclick="event.stopPropagation();showCertificate('${c.id}')">תעודת סיום</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('') + '</div>';
+}
+
+window.openPlayer = async function(courseId) {
+  showTab('player');
+  const cont = document.getElementById('playerContainer');
+  cont.innerHTML = '<div class="loading-state"><div class="spinner-lg"></div></div>';
+  try {
+    activePlayerCourse = me.courses.find(c => c.id === courseId);
+    activePlayerVideos = await API.videos(courseId);
+    let materials = [];
+    try { materials = await API.myMaterials(courseId); } catch {}
+    if (!activePlayerVideos.length) {
+      cont.innerHTML = `<div class="empty-state"><p>טרם נוספו שיעורים לקורס זה. דורון יוסיף בקרוב.</p></div>`;
+      return;
+    }
+    activePlayerVideoIdx = 0;
+    // Find first uncompleted video
+    for (let i = 0; i < activePlayerVideos.length; i++) {
+      if (!me.progress[`${courseId}_${activePlayerVideos[i].id}`]) {
+        activePlayerVideoIdx = i;
+        break;
+      }
+    }
+    renderPlayer(materials);
+  } catch (err) {
+    cont.innerHTML = `<div class="empty-state"><p style="color:var(--danger)">${escapeHtml(err.message)}</p></div>`;
+  }
+};
+
+function renderPlayer(materials) {
+  const v = activePlayerVideos[activePlayerVideoIdx];
+  const parsed = parseVideoUrl(v.url);
+  const playerHtml = parsed 
+    ? (parsed.type === 'direct' 
+        ? `<video controls src="${escapeHtml(parsed.embed)}"></video>`
+        : `<iframe src="${escapeHtml(parsed.embed)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`)
+    : `<div style="display:grid;place-items:center;color:#fff;padding:40px;height:100%">לא ניתן להציג סרטון</div>`;
+  const isCompleted = !!me.progress[`${activePlayerCourse.id}_${v.id}`];
+  const allDone = activePlayerVideos.every(vid => me.progress[`${activePlayerCourse.id}_${vid.id}`]);
+  
+  document.getElementById('playerContainer').innerHTML = `
+    <div class="player-shell">
+      <div class="player-main">
+        <div class="video-player">${playerHtml}</div>
+        <div class="player-meta">
+          <div>
+            <h2>${escapeHtml(v.title)}</h2>
+            <small style="color:var(--text-muted)">שיעור ${activePlayerVideoIdx+1} מתוך ${activePlayerVideos.length} · ${escapeHtml(activePlayerCourse.title)}</small>
+          </div>
+          <button class="btn ${isCompleted?'btn-outline':'btn-primary'} btn-sm" onclick="toggleWatched('${v.id}')">
+            ${isCompleted ? '✓ סומן כהושלם' : 'סמן כהושלם'}
+          </button>
+        </div>
+        ${v.description ? `<p style="font-size:14.5px;color:var(--text-soft);line-height:1.7;margin-top:8px;white-space:pre-wrap">${escapeHtml(v.description)}</p>` : ''}
+        
+        <div style="display:flex;gap:8px;margin-top:20px;border-top:1px solid var(--border);padding-top:18px">
+          <button class="btn btn-outline btn-sm" onclick="prevVideo()" ${activePlayerVideoIdx===0?'disabled':''}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            השיעור הקודם
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="nextVideo()" ${activePlayerVideoIdx===activePlayerVideos.length-1?'disabled':''}>
+            השיעור הבא
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+          ${allDone ? `<button class="btn btn-gold btn-sm" onclick="showCertificate('${activePlayerCourse.id}')">קבל תעודת סיום</button>` : ''}
+        </div>
+        
+        ${materials && materials.length ? `
+          <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:18px">
+            <h4 style="font-size:16px;color:var(--navy);margin-bottom:12px">חומרים נלווים</h4>
+            ${materials.map(m => `
+              <a href="${escapeHtml(m.url)}" target="_blank" class="list-row" style="text-decoration:none">
+                <div class="list-row-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="list-row-info">
+                  <strong>${escapeHtml(m.title)}</strong>
+                  <small>${escapeHtml((m.fileType||'').toUpperCase())}</small>
+                </div>
+                <div class="list-row-actions">
+                  <span class="btn btn-outline btn-sm">הורדה</span>
+                </div>
+              </a>`).join('')}
+          </div>
+        ` : ''}
+      </div>
+      <div class="player-side">
+        <h4>שיעורי הקורס</h4>
+        ${activePlayerVideos.map((vd, i) => {
+          const done = !!me.progress[`${activePlayerCourse.id}_${vd.id}`];
+          return `
+            <div class="lesson-item ${i===activePlayerVideoIdx?'active':''} ${done?'completed':''}" onclick="goToVideo(${i})">
+              <div class="lesson-num">${done ? '✓' : i+1}</div>
+              <div class="lesson-title">${escapeHtml(vd.title)}</div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+window.goToVideo = function(idx) {
+  activePlayerVideoIdx = idx;
+  // re-fetch materials? cached materials in render; simpler: just re-render with empty materials
+  // store materials on activePlayerCourse for re-use
+  loadAndRender();
+};
+
+async function loadAndRender() {
+  try {
+    let materials = [];
+    try { materials = await API.myMaterials(activePlayerCourse.id); } catch {}
+    renderPlayer(materials);
+  } catch {}
+}
+
+window.prevVideo = function() {
+  if (activePlayerVideoIdx > 0) { activePlayerVideoIdx--; loadAndRender(); }
+};
+window.nextVideo = function() {
+  if (activePlayerVideoIdx < activePlayerVideos.length - 1) { activePlayerVideoIdx++; loadAndRender(); }
+};
+
+window.toggleWatched = async function(videoId) {
+  const key = `${activePlayerCourse.id}_${videoId}`;
+  const completed = !me.progress[key];
+  try {
+    const res = await API.setProgress(activePlayerCourse.id, videoId, completed);
+    me.progress = res.progress;
+    // recalc course progress
+    const c = me.courses.find(c => c.id === activePlayerCourse.id);
+    if (c) {
+      c.completedVideos = activePlayerVideos.filter(v => me.progress[`${c.id}_${v.id}`]).length;
+      c.progressPct = c.totalVideos ? Math.round(c.completedVideos / c.totalVideos * 100) : 0;
+    }
+    loadAndRender();
+  } catch (err) { alert(err.message); }
+};
+
+window.showCertificate = async function(courseId) {
+  try {
+    const data = await API.myCertificate(courseId);
+    const cert = data.certificate;
+    const date = new Date(cert.issuedAt).toLocaleDateString('he-IL', {day:'numeric',month:'long',year:'numeric'});
+    document.getElementById('playerContainer').innerHTML = `
+      <div style="margin-bottom:14px">
+        <button class="btn btn-ghost btn-sm" onclick="showTab('courses')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          חזרה
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="window.print()">הדפסה / שמירה כ-PDF</button>
+      </div>
+      <div class="certificate">
+        <div class="cert-eyebrow">תעודת סיום</div>
+        <div class="cert-title">דורון · אימון חיים באמונה</div>
+        <div class="cert-body">תעודה זו ניתנת בזאת לאות הוקרה ל</div>
+        <div class="cert-name">${escapeHtml(cert.studentName)}</div>
+        <div class="cert-body">על השלמת מסע הלימוד בקורס</div>
+        <div class="cert-course">«${escapeHtml(cert.courseTitle)}»</div>
+        <div class="cert-foot">הוענקה ב-${date}<br>מספר תעודה: ${cert.certificateId}</div>
+      </div>`;
+    showTab('player');
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+window.showTab = function(name) {
+  document.querySelectorAll('.dash-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.dash-pane').forEach(p => p.style.display = 'none');
+  document.getElementById('pane-' + name).style.display = '';
+  if (name === 'chat') loadChat();
+};
+
+let chatPolling = null;
+async function loadChat() {
+  try {
+    const messages = await API.myChat();
+    renderChat(messages);
+  } catch (err) {
+    document.getElementById('chatMessages').innerHTML = `<div class="chat-empty">שגיאה: ${escapeHtml(err.message)}</div>`;
+  }
+  if (!chatPolling) {
+    chatPolling = setInterval(async () => {
+      if (document.getElementById('pane-chat').style.display === 'none') return;
+      try { renderChat(await API.myChat()); } catch {}
+    }, 8000);
+  }
+}
+
+function renderChat(messages) {
+  const el = document.getElementById('chatMessages');
+  if (!messages.length) {
+    el.innerHTML = `<div class="chat-empty">אין הודעות עדיין. שלח לדורון את השאלה הראשונה שלך 👋</div>`;
+    return;
+  }
+  el.innerHTML = messages.map(m => {
+    const from = m.from === 'admin' ? 'from-admin' : 'from-student';
+    const t = new Date(m.time).toLocaleString('he-IL', {day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
+    return `<div class="chat-msg ${from}">${escapeHtml(m.text)}<time>${t}</time></div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+window.sendChat = async function() {
+  const inp = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+  inp.disabled = true;
+  try {
+    const res = await API.sendMessage(text);
+    inp.value = '';
+    if (res.thread) renderChat(res.thread);
+  } catch (err) { alert(err.message); }
+  finally { btn.disabled = false; inp.disabled = false; inp.focus(); }
+};
+
+window.changePassword = async function() {
+  const oldP = document.getElementById('oldPwd').value;
+  const newP = document.getElementById('newPwd').value;
+  const newP2 = document.getElementById('newPwd2').value;
+  const msg = document.getElementById('pwdMsg');
+  msg.innerHTML = '';
+  if (!oldP || !newP) { msg.innerHTML = '<div class="form-error">נא למלא את כל השדות</div>'; return; }
+  if (newP.length < 6) { msg.innerHTML = '<div class="form-error">הסיסמה חייבת להיות באורך 6 תווים לפחות</div>'; return; }
+  if (newP !== newP2) { msg.innerHTML = '<div class="form-error">אישור הסיסמה אינו תואם</div>'; return; }
+  const btn = document.getElementById('changePwdBtn');
+  btn.disabled = true;
+  try {
+    await API.changeMyPassword(oldP, newP);
+    msg.innerHTML = '<div class="form-success">הסיסמה עודכנה בהצלחה!</div>';
+    document.getElementById('oldPwd').value = '';
+    document.getElementById('newPwd').value = '';
+    document.getElementById('newPwd2').value = '';
+  } catch (err) {
+    msg.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`;
+  } finally { btn.disabled = false; }
+};
+
+window.doLogout = async function() {
+  await API.logout();
+  Auth.setStudentToken(null);
+  window.location = '/';
+};
+</script>
+</body>
+</html>

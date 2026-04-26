@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>כניסה · דורון</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Assistant:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="brand-mark">ד</div>
+      <h1>ברוך הבא</h1>
+      <p>דורון · אימון חיים באמונה</p>
+    </div>
+    
+    <form id="loginForm" onsubmit="event.preventDefault();doLogin();">
+      <div id="loginMsg"></div>
+      <div class="field">
+        <label>אימייל</label>
+        <input type="email" id="email" required autocomplete="email" placeholder="your@email.com">
+      </div>
+      <div class="field">
+        <label>סיסמה</label>
+        <input type="password" id="password" required autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+        כניסה לאזור האישי
+      </button>
+    </form>
+    
+    <div class="auth-foot">
+      <p>אין לך עדיין חשבון? <a href="/#courses">בחר קורס</a> והתחל ללמוד</p>
+      <p style="margin-top:14px"><a href="/" style="color:var(--text-muted);font-weight:400">← חזרה לאתר</a></p>
+    </div>
+  </div>
+</div>
+
+<script src="/config.js"></script>
+<script src="/api.js"></script>
+<script>
+if (Auth.studentToken) {
+  // Already logged in
+  window.location = '/dashboard.html';
+}
+
+async function doLogin() {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const msg = document.getElementById('loginMsg');
+  const btn = document.getElementById('loginBtn');
+  msg.innerHTML = '';
+  if (!email || !password) {
+    msg.innerHTML = '<div class="form-error">אנא מלא את כל השדות</div>';
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> מתחבר...';
+  try {
+    const data = await API.studentLogin(email, password);
+    Auth.setStudentToken(data.token);
+    window.location = '/dashboard.html';
+  } catch (err) {
+    msg.innerHTML = `<div class="form-error">${escapeHtml(err.message || 'שגיאה')}</div>`;
+    btn.disabled = false;
+    btn.innerHTML = 'כניסה לאזור האישי';
+  }
+}
+</script>
+</body>
+</html>
