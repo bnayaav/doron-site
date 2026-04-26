@@ -82,7 +82,8 @@ section{position:relative;z-index:1}
 .about-text p:first-child::first-letter{font-family:'Frank Ruhl Libre',serif;font-size:56px;font-weight:700;color:var(--gold-dark);float:right;line-height:.9;margin:6px 0 0 8px}
 .about-card{background:var(--cream-light);border:1px solid var(--border);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow)}
 .about-card h4{font-size:18px;margin-bottom:8px;color:var(--navy)}
-.about-card-row{display:flex;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+.about-card-row{display:flex;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);transition:background-color .2s,padding .2s;border-radius:10px}
+a.about-card-row:hover{background:var(--cream);padding-right:10px;padding-left:10px}
 .about-card-row:last-child{border:none;padding-bottom:0}
 .about-card-row .ico{width:38px;height:38px;border-radius:10px;background:var(--cream-dark);display:grid;place-items:center;color:var(--navy);flex-shrink:0}
 .about-card-row strong{display:block;font-size:13px;color:var(--text-muted);font-weight:500}
