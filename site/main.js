@@ -2,6 +2,7 @@
 (function(){
   let catalog = [];
   let articles = [];
+  let siteContent = null;
   
   document.getElementById('year').textContent = new Date().getFullYear();
   
@@ -18,9 +19,117 @@
     if (ll) ll.style.display = 'none';
   }
   
-  // Load catalog & articles
+  // Load everything in parallel
+  loadSiteContent();
   loadCatalog();
   loadArticles();
+
+  async function loadSiteContent() {
+    try {
+      siteContent = await API.siteContent();
+      applySiteContent(siteContent);
+    } catch (err) {
+      console.warn('site content load failed', err);
+    }
+  }
+
+  function applySiteContent(c) {
+    if (!c) return;
+    // 1. Text content via data-content
+    document.querySelectorAll('[data-content]').forEach(el => {
+      const key = el.getAttribute('data-content');
+      if (c[key] !== undefined && c[key] !== null) {
+        // brandName special: keep the <small> tagline if present
+        if (key === 'brandName' && el.querySelector('small')) {
+          const small = el.querySelector('small');
+          el.firstChild && (el.firstChild.nodeValue = c[key]);
+          if (c.brandTagline !== undefined) small.textContent = c.brandTagline;
+        } else {
+          el.textContent = c[key];
+        }
+      }
+    });
+
+    // 2. Theme colors
+    const themeEl = document.getElementById('dynamic-theme');
+    if (themeEl) {
+      // Compute a slightly lighter cream + soft navy variant from the chosen colors
+      const navySoft = lightenColor(c.colorNavy, 10);
+      const goldLight = lightenColor(c.colorGold, 15);
+      themeEl.textContent = `
+        :root{
+          --navy:${c.colorNavy};
+          --navy-soft:${navySoft};
+          --cream:${c.colorCream};
+          --cream-light:${c.colorCreamLight};
+          --gold:${c.colorGold};
+          --gold-dark:${c.colorGoldDark};
+          --gold-light:${goldLight};
+        }
+      `;
+      // Update theme-color meta tag for browser chrome
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', c.colorNavy);
+    }
+
+    // 3. Logo
+    const brandMark = document.getElementById('brandMark');
+    if (brandMark && c.logoUrl) {
+      brandMark.innerHTML = `<img src="${escapeHtml(c.logoUrl)}" alt="לוגו" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    }
+
+    // 4. Hero background image
+    if (c.heroBgImage) {
+      const hero = document.getElementById('heroSection');
+      if (hero) {
+        hero.style.backgroundImage = `linear-gradient(to bottom, rgba(250,247,242,0.85), rgba(250,247,242,0.95)), url("${c.heroBgImage}")`;
+        hero.style.backgroundSize = 'cover';
+        hero.style.backgroundPosition = 'center';
+      }
+    }
+
+    // 5. Contact links
+    if (c.contactPhone) {
+      const tel = c.contactPhone.replace(/[^\d+]/g, '');
+      const phoneLink = document.getElementById('contactPhoneLink');
+      if (phoneLink) phoneLink.href = 'tel:' + tel;
+    }
+    if (c.contactEmail) {
+      const emailLink = document.getElementById('contactEmailLink');
+      if (emailLink) emailLink.href = 'mailto:' + c.contactEmail;
+    }
+    if (c.contactWhatsappNum) {
+      const wa = document.getElementById('contactWaLink');
+      if (wa) {
+        const num = c.contactWhatsappNum.replace(/[^\d]/g, '');
+        const msg = encodeURIComponent(c.contactWhatsappMsg || '');
+        wa.href = `https://wa.me/${num}${msg ? '?text=' + msg : ''}`;
+      }
+    }
+
+    // 6. Section visibility
+    const map = {about:c.showAbout, courses:c.showCourses, offerings:c.showOfferings, articles:c.showArticles};
+    Object.entries(map).forEach(([section, visible]) => {
+      document.querySelectorAll(`[data-section="${section}"]`).forEach(el => el.style.display = visible === false ? 'none' : '');
+      document.querySelectorAll(`[data-section-link="${section}"]`).forEach(el => el.style.display = visible === false ? 'none' : '');
+    });
+    // Contact card visibility is tied to about section in this layout
+  }
+
+  // Simple color lightening helper for derived shades
+  function lightenColor(hex, percent) {
+    if (!hex || !hex.startsWith('#')) return hex;
+    let h = hex.slice(1);
+    if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    const num = parseInt(h, 16);
+    let r = (num >> 16) + Math.round(255 * percent / 100);
+    let g = ((num >> 8) & 0xff) + Math.round(255 * percent / 100);
+    let b = (num & 0xff) + Math.round(255 * percent / 100);
+    r = Math.min(255, Math.max(0, r));
+    g = Math.min(255, Math.max(0, g));
+    b = Math.min(255, Math.max(0, b));
+    return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+  }
   
   // Smooth scroll
   document.querySelectorAll('a[href^="#"]').forEach(a => {

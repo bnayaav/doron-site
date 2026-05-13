@@ -215,6 +215,12 @@ export default {
         return wrap(json({ ok: true, service: "doron-api", time: Date.now() }));
       }
 
+      // Public site content (theme, texts, contact info, section visibility)
+      if (path === "/api/site/content" && method === "GET") {
+        const raw = await env.KV.get("site_content");
+        return wrap(json(raw ? JSON.parse(raw) : getDefaultSiteContent()));
+      }
+
       if (path === "/api/catalog" && method === "GET") {
         const raw = await env.KV.get("courses:catalog");
         const list = raw ? JSON.parse(raw) : [];
@@ -862,6 +868,28 @@ export default {
         }));
       }
 
+      // Admin: read/save site content (textual + theme + visibility)
+      if (path === "/api/admin/site-content" && method === "GET") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const raw = await env.KV.get("site_content");
+        return wrap(json(raw ? JSON.parse(raw) : getDefaultSiteContent()));
+      }
+      if (path === "/api/admin/site-content" && method === "POST") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const { content } = await request.json().catch(() => ({}));
+        if (!content || typeof content !== "object") return wrap(json({ error: "תוכן לא תקין" }, 400));
+        // Merge with defaults to ensure full structure
+        const merged = { ...getDefaultSiteContent(), ...content };
+        await env.KV.put("site_content", JSON.stringify(merged));
+        return wrap(json({ ok: true, content: merged }));
+      }
+      if (path === "/api/admin/site-content/reset" && method === "POST") {
+        if (!admin) return wrap(json({ error: "לא מחובר" }, 401));
+        const def = getDefaultSiteContent();
+        await env.KV.put("site_content", JSON.stringify(def));
+        return wrap(json({ ok: true, content: def }));
+      }
+
       return wrap(json({ error: "Not found", path }, 404));
     } catch (err) {
       console.error(err);
@@ -869,3 +897,74 @@ export default {
     }
   },
 };
+
+// ===== Default site content =====
+function getDefaultSiteContent() {
+  return {
+    // Brand
+    brandName: "דורון",
+    brandTagline: "אימון חיים באמונה",
+    logoUrl: "", // empty = use default "ד" letter
+
+    // Theme colors
+    colorNavy: "#14213D",
+    colorCream: "#F5EFE6",
+    colorCreamLight: "#FAF7F2",
+    colorGold: "#C9A961",
+    colorGoldDark: "#A68940",
+
+    // Hero
+    heroEyebrow: "מסע של אמונה · הקשבה · צמיחה",
+    heroTitle: "להביט על החיים",
+    heroTitleEm: "דרך מבט של אמונה",
+    heroLead: "קורסי וידאו מקצועיים, מסגרות אימון אישיות וקבוצתיות, מאמרי יסוד שמתחדשים מדי יום.",
+    heroBgImage: "", // optional background image URL
+    heroBtnPrimary: "לכל הקורסים",
+    heroBtnSecondary: "קרא מאמרים",
+
+    // About
+    aboutKicker: "על שיטת האימון",
+    aboutTitle: "אימון חיים שמתחיל במקור",
+    aboutP1: "שיטת אימון ייחודית שנשענת על יסודות באמונה, ומתרגמת אותם לכלים מעשיים לחיי היומיום. כל פגישה היא הזדמנות להעמיק את ההקשבה לעצמך, לזוגיות, ולסביבה – דרך מבט רחב יותר.",
+    aboutP2: "הליווי שלי משלב בין שיחה אישית, מסגרות קבוצתיות, וחומרי לימוד יומיים שזמינים כאן באתר. המטרה אחת: שכל אחד יצליח לחיות את החיים שלו מתוך משמעות.",
+
+    // Contact
+    contactTitle: "פרטי התקשרות",
+    contactSubtitle: "ליצירת קשר או קביעת פגישת היכרות ללא התחייבות",
+    contactPhone: "058-7529107",
+    contactEmail: "doron.avihzer@gmail.com",
+    contactWhatsappNum: "972587529107",
+    contactWhatsappMsg: "שלום דורון, אשמח לקבל פרטים נוספים",
+
+    // Courses section
+    coursesKicker: "קורסי וידאו דיגיטליים",
+    coursesTitle: "הקורסים שלי",
+    coursesLead: "כל קורס נבנה במיוחד לליווי של מסע פנימי. צפייה גמישה בקצב שלך, חומרי לימוד נלווים, ומענה אישי לשאלות.",
+
+    // Offerings section (workshops/lectures/lessons)
+    offeringsKicker: "לציבור ולמוסדות חינוך",
+    offeringsTitle: "סדנאות, הרצאות ושיעורים",
+    offeringsLead: "תוכן מותאם – לקהילה, לבית ספר, לארגון, או לכל מסגרת אחרת.",
+    offering1Title: "סדנאות",
+    offering1Text: "סדנאות חווייתיות של מספר שעות, מותאמות למטרת הקבוצה או המוסד.",
+    offering2Title: "הרצאות",
+    offering2Text: "הרצאות בנושאי יסודות באמונה, חינוך, זוגיות, ועבודה עצמית.",
+    offering3Title: "שיעורים קבועים",
+    offering3Text: "שיעורים שבועיים או חודשיים לקהילות ומוסדות חינוך.",
+
+    // Articles section
+    articlesKicker: "מאמרי יסוד · טור דעה · ספריית מאמרים",
+    articlesTitle: "תוכן שמתחדש כל יום",
+
+    // Footer
+    footerAbout: "אימון חיים באמונה – קורסים דיגיטליים, מסגרות אישיות וקבוצתיות, ותוכן מותאם למוסדות.",
+    footerCopyright: "נבנה בעברית ובאהבה",
+
+    // Section visibility toggles
+    showAbout: true,
+    showCourses: true,
+    showOfferings: true,
+    showArticles: true,
+    showContact: true,
+  };
+}

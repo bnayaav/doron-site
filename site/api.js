@@ -89,6 +89,12 @@
     testEmail: (to) => req('/api/admin/test-email', { method: 'POST', body: JSON.stringify({ to }) }, 'admin'),
     changeAdminPassword: (oldPassword, newPassword) => req('/api/admin/change-password', { method: 'POST', body: JSON.stringify({ oldPassword, newPassword }) }, 'admin'),
     adminStats: () => req('/api/admin/stats', {}, 'admin'),
+
+    // Site content (page builder)
+    siteContent: () => req('/api/site/content'),
+    adminSiteContent: () => req('/api/admin/site-content', {}, 'admin'),
+    saveSiteContent: (content) => req('/api/admin/site-content', { method: 'POST', body: JSON.stringify({ content }) }, 'admin'),
+    resetSiteContent: () => req('/api/admin/site-content/reset', { method: 'POST' }, 'admin'),
   };
 
   // Helpers

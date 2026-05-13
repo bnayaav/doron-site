@@ -17,6 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="דורון">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/styles.css">
+<style id="dynamic-theme"></style>
 </head>
 <body>
 
@@ -25,14 +26,14 @@
 <header class="site-header">
   <div class="nav">
     <a href="/" class="brand">
-      <div class="brand-mark">ד</div>
-      <div class="brand-name">דורון<small>אימון חיים באמונה</small></div>
+      <div class="brand-mark" id="brandMark">ד</div>
+      <div class="brand-name" data-content="brandName">דורון<small data-content="brandTagline">אימון חיים באמונה</small></div>
     </a>
     <nav class="nav-links">
-      <a href="#about">אודות</a>
-      <a href="#courses">קורסים</a>
-      <a href="#offerings">לציבור הרחב</a>
-      <a href="#articles">מאמרים</a>
+      <a href="#about" data-section-link="about">אודות</a>
+      <a href="#courses" data-section-link="courses">קורסים</a>
+      <a href="#offerings" data-section-link="offerings">לציבור הרחב</a>
+      <a href="#articles" data-section-link="articles">מאמרים</a>
     </nav>
     <div style="display:flex;gap:8px;align-items:center">
       <a href="/dashboard.html" class="btn btn-outline btn-sm" id="dashboardLink" style="display:none">האזור האישי</a>
@@ -44,48 +45,48 @@
   </div>
 </header>
 
-<section class="hero">
+<section class="hero" id="heroSection">
   <svg class="hero-ornament" viewBox="0 0 400 400" aria-hidden="true">
-    <circle cx="200" cy="200" r="150" fill="none" stroke="#C9A961" stroke-width="1" opacity=".4"/>
-    <circle cx="200" cy="200" r="100" fill="none" stroke="#C9A961" stroke-width="1" opacity=".3"/>
-    <circle cx="200" cy="200" r="50" fill="none" stroke="#C9A961" stroke-width="1" opacity=".25"/>
+    <circle cx="200" cy="200" r="150" fill="none" stroke="currentColor" stroke-width="1" opacity=".4" style="color:var(--gold)"/>
+    <circle cx="200" cy="200" r="100" fill="none" stroke="currentColor" stroke-width="1" opacity=".3" style="color:var(--gold)"/>
+    <circle cx="200" cy="200" r="50" fill="none" stroke="currentColor" stroke-width="1" opacity=".25" style="color:var(--gold)"/>
   </svg>
   <div class="hero-inner">
-    <div class="hero-eyebrow reveal reveal-1">מסע של אמונה · הקשבה · צמיחה</div>
-    <h1 class="reveal reveal-2">להביט על החיים<br><em>דרך מבט של אמונה</em></h1>
-    <p class="hero-lead reveal reveal-3">קורסי וידאו מקצועיים, מסגרות אימון אישיות וקבוצתיות, מאמרי יסוד שמתחדשים מדי יום.</p>
+    <div class="hero-eyebrow reveal reveal-1" data-content="heroEyebrow">מסע של אמונה · הקשבה · צמיחה</div>
+    <h1 class="reveal reveal-2"><span data-content="heroTitle">להביט על החיים</span><br><em data-content="heroTitleEm">דרך מבט של אמונה</em></h1>
+    <p class="hero-lead reveal reveal-3" data-content="heroLead">קורסי וידאו מקצועיים, מסגרות אימון אישיות וקבוצתיות, מאמרי יסוד שמתחדשים מדי יום.</p>
     <div class="hero-actions reveal reveal-4">
-      <a href="#courses" class="btn btn-primary">לכל הקורסים
+      <a href="#courses" class="btn btn-primary"><span data-content="heroBtnPrimary">לכל הקורסים</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       </a>
-      <a href="#articles" class="btn btn-outline">קרא מאמרים</a>
+      <a href="#articles" class="btn btn-outline" data-content="heroBtnSecondary">קרא מאמרים</a>
     </div>
   </div>
 </section>
 
-<section class="section about" id="about">
+<section class="section about" id="about" data-section="about">
   <div class="section-inner">
     <div class="about-grid">
       <div>
-        <div class="section-kicker">על שיטת האימון</div>
-        <h2>אימון חיים שמתחיל במקור</h2>
+        <div class="section-kicker" data-content="aboutKicker">על שיטת האימון</div>
+        <h2 data-content="aboutTitle">אימון חיים שמתחיל במקור</h2>
         <div class="about-text mt-16">
-          <p>שיטת אימון ייחודית שנשענת על יסודות באמונה, ומתרגמת אותם לכלים מעשיים לחיי היומיום. כל פגישה היא הזדמנות להעמיק את ההקשבה לעצמך, לזוגיות, ולסביבה – דרך מבט רחב יותר.</p>
-          <p>הליווי שלי משלב בין שיחה אישית, מסגרות קבוצתיות, וחומרי לימוד יומיים שזמינים כאן באתר. המטרה אחת: שכל אחד יצליח לחיות את החיים שלו מתוך משמעות.</p>
+          <p data-content="aboutP1">שיטת אימון ייחודית שנשענת על יסודות באמונה, ומתרגמת אותם לכלים מעשיים לחיי היומיום. כל פגישה היא הזדמנות להעמיק את ההקשבה לעצמך, לזוגיות, ולסביבה – דרך מבט רחב יותר.</p>
+          <p data-content="aboutP2">הליווי שלי משלב בין שיחה אישית, מסגרות קבוצתיות, וחומרי לימוד יומיים שזמינים כאן באתר. המטרה אחת: שכל אחד יצליח לחיות את החיים שלו מתוך משמעות.</p>
         </div>
       </div>
-      <aside class="about-card">
-        <h4>פרטי התקשרות</h4>
-        <p class="text-muted">ליצירת קשר או קביעת פגישת היכרות ללא התחייבות</p>
-        <a href="tel:0587529107" class="about-card-row" style="margin-top:14px;text-decoration:none;color:inherit">
+      <aside class="about-card" data-section="contact">
+        <h4 data-content="contactTitle">פרטי התקשרות</h4>
+        <p class="text-muted" data-content="contactSubtitle">ליצירת קשר או קביעת פגישת היכרות ללא התחייבות</p>
+        <a id="contactPhoneLink" href="tel:0587529107" class="about-card-row" style="margin-top:14px;text-decoration:none;color:inherit">
           <div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg></div>
-          <div><strong>טלפון</strong><span>058-7529107</span></div>
+          <div><strong>טלפון</strong><span data-content="contactPhone">058-7529107</span></div>
         </a>
-        <a href="mailto:doron.avihzer@gmail.com" class="about-card-row" style="text-decoration:none;color:inherit">
+        <a id="contactEmailLink" href="mailto:doron.avihzer@gmail.com" class="about-card-row" style="text-decoration:none;color:inherit">
           <div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
-          <div><strong>אימייל</strong><span>doron.avihzer@gmail.com</span></div>
+          <div><strong>אימייל</strong><span data-content="contactEmail">doron.avihzer@gmail.com</span></div>
         </a>
-        <a href="https://wa.me/972587529107?text=שלום%20דורון%2C%20אשמח%20לקבל%20פרטים%20נוספים" target="_blank" rel="noopener" class="about-card-row" style="text-decoration:none;color:inherit">
+        <a id="contactWaLink" href="#" target="_blank" rel="noopener" class="about-card-row" style="text-decoration:none;color:inherit">
           <div class="ico" style="background:rgba(37,211,102,.15);color:#25D366"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></div>
           <div><strong>וואטסאפ</strong><span>לחץ לפתיחת שיחה ←</span></div>
         </a>
@@ -94,12 +95,12 @@
   </div>
 </section>
 
-<section class="section section-courses" id="courses">
+<section class="section section-courses" id="courses" data-section="courses">
   <div class="section-inner">
     <div class="section-head">
-      <div class="section-kicker">קורסי וידאו דיגיטליים</div>
-      <h2>הקורסים שלי</h2>
-      <p class="section-lead">כל קורס נבנה במיוחד לליווי של מסע פנימי. צפייה גמישה בקצב שלך, חומרי לימוד נלווים, ומענה אישי לשאלות.</p>
+      <div class="section-kicker" data-content="coursesKicker">קורסי וידאו דיגיטליים</div>
+      <h2 data-content="coursesTitle">הקורסים שלי</h2>
+      <p class="section-lead" data-content="coursesLead">כל קורס נבנה במיוחד לליווי של מסע פנימי. צפייה גמישה בקצב שלך, חומרי לימוד נלווים, ומענה אישי לשאלות.</p>
     </div>
     <div class="courses-marketplace" id="catalogGrid">
       <div class="loading-state"><div class="spinner-lg"></div></div>
@@ -107,45 +108,45 @@
   </div>
 </section>
 
-<section class="section offerings" id="offerings">
+<section class="section offerings" id="offerings" data-section="offerings">
   <div class="section-inner">
     <div class="section-head">
-      <div class="section-kicker">לציבור ולמוסדות חינוך</div>
-      <h2>סדנאות, הרצאות ושיעורים</h2>
-      <p class="section-lead" style="color:rgba(245,239,230,.75)">תוכן מותאם – לקהילה, לבית ספר, לארגון, או לכל מסגרת אחרת.</p>
+      <div class="section-kicker" data-content="offeringsKicker">לציבור ולמוסדות חינוך</div>
+      <h2 data-content="offeringsTitle">סדנאות, הרצאות ושיעורים</h2>
+      <p class="section-lead" style="color:rgba(245,239,230,.75)" data-content="offeringsLead">תוכן מותאם – לקהילה, לבית ספר, לארגון, או לכל מסגרת אחרת.</p>
     </div>
     <div class="offerings-grid">
       <div class="offering">
         <div class="offering-ico">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         </div>
-        <h4>סדנאות</h4>
-        <p>סדנאות חווייתיות של מספר שעות, מותאמות למטרת הקבוצה או המוסד.</p>
+        <h4 data-content="offering1Title">סדנאות</h4>
+        <p data-content="offering1Text">סדנאות חווייתיות של מספר שעות, מותאמות למטרת הקבוצה או המוסד.</p>
       </div>
       <div class="offering">
         <div class="offering-ico">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h20v13H2z"/><path d="M8 21h8M12 17v4"/></svg>
         </div>
-        <h4>הרצאות</h4>
-        <p>הרצאות בנושאי יסודות באמונה, חינוך, זוגיות, ועבודה עצמית.</p>
+        <h4 data-content="offering2Title">הרצאות</h4>
+        <p data-content="offering2Text">הרצאות בנושאי יסודות באמונה, חינוך, זוגיות, ועבודה עצמית.</p>
       </div>
       <div class="offering">
         <div class="offering-ico">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20"/></svg>
         </div>
-        <h4>שיעורים קבועים</h4>
-        <p>שיעורים שבועיים או חודשיים לקהילות ומוסדות חינוך.</p>
+        <h4 data-content="offering3Title">שיעורים קבועים</h4>
+        <p data-content="offering3Text">שיעורים שבועיים או חודשיים לקהילות ומוסדות חינוך.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="section" id="articles">
+<section class="section" id="articles" data-section="articles">
   <div class="section-inner">
     <div class="articles-head">
       <div style="flex:1;min-width:280px">
-        <div class="section-kicker">מאמרי יסוד · טור דעה · ספריית מאמרים</div>
-        <h2>תוכן שמתחדש כל יום</h2>
+        <div class="section-kicker" data-content="articlesKicker">מאמרי יסוד · טור דעה · ספריית מאמרים</div>
+        <h2 data-content="articlesTitle">תוכן שמתחדש כל יום</h2>
       </div>
       <div class="search-box">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -159,8 +160,8 @@
 <footer id="contact">
   <div class="footer-inner">
     <div class="footer-brand">
-      <h4>דורון</h4>
-      <p>אימון חיים באמונה – קורסים דיגיטליים, מסגרות אישיות וקבוצתיות, ותוכן מותאם למוסדות.</p>
+      <h4 data-content="brandName">דורון</h4>
+      <p data-content="footerAbout">אימון חיים באמונה – קורסים דיגיטליים, מסגרות אישיות וקבוצתיות, ותוכן מותאם למוסדות.</p>
     </div>
     <div>
       <h5>ניווט</h5>
@@ -178,7 +179,7 @@
       </ul>
     </div>
   </div>
-  <div class="footer-bottom">© <span id="year"></span> · נבנה בעברית ובאהבה</div>
+  <div class="footer-bottom">© <span id="year"></span> · <span data-content="footerCopyright">נבנה בעברית ובאהבה</span></div>
 </footer>
 
 <!-- Course details modal -->
@@ -199,7 +200,6 @@
       <button class="btn btn-primary btn-block" id="pwaInstallBtn" onclick="triggerInstall()">הוסף למסך הבית</button>
       <button class="btn btn-ghost btn-sm" onclick="dismissPwa()">לא עכשיו</button>
     </div>
-    <!-- iOS instructions (shown only on iOS) -->
     <div class="pwa-ios-steps" id="pwaIosSteps" style="display:none">
       <div class="pwa-step">
         <span class="pwa-step-num">1</span>
@@ -210,9 +210,7 @@
       </div>
       <div class="pwa-step">
         <span class="pwa-step-num">2</span>
-        <div>בחר <strong>"הוסף למסך הבית"</strong>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
-        </div>
+        <div>בחר <strong>"הוסף למסך הבית"</strong></div>
       </div>
       <div class="pwa-step">
         <span class="pwa-step-num">3</span>
@@ -228,77 +226,40 @@
 <script>
 // ============ PWA Install Prompt ============
 let deferredInstallEvent = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstallEvent = e; });
+window.addEventListener('appinstalled', () => { hidePwa(); try { localStorage.setItem('pwa:installed', '1'); } catch {} });
 
-// Capture the install event so we can trigger it on button click
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredInstallEvent = e;
-});
-
-// Hide the sheet if user already installed
-window.addEventListener('appinstalled', () => {
-  hidePwa();
-  try { localStorage.setItem('pwa:installed', '1'); } catch {}
-});
-
-// Show the sheet only on mobile, only if not installed yet
 function maybeShowPwa() {
-  // Already running in standalone (app mode)?
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   if (isStandalone) return;
-  
-  // Mobile only
   const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   if (!isMobile) return;
-  
-  // Already installed in this session?
   try { if (localStorage.getItem('pwa:installed') === '1') return; } catch {}
-  
-  // iOS detection (for showing iOS-specific instructions)
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   if (isIOS) {
     document.getElementById('pwaInstallBtn').style.display = 'none';
     document.getElementById('pwaIosSteps').style.display = 'block';
     document.getElementById('pwaSheetText').textContent = 'התקן את דורון על האייפון שלך בכמה לחיצות:';
   } else {
-    // Android — needs the deferred event to be available
     document.getElementById('pwaIosSteps').style.display = 'none';
   }
-  
-  // Show after a small delay so the page renders first
-  setTimeout(() => {
-    document.getElementById('pwaSheet').classList.add('open');
-  }, 1200);
+  setTimeout(() => { document.getElementById('pwaSheet').classList.add('open'); }, 1200);
 }
 
 window.triggerInstall = async function() {
-  if (!deferredInstallEvent) {
-    // Fallback (browser doesn't expose the prompt) — just close
-    hidePwa();
-    return;
-  }
+  if (!deferredInstallEvent) { hidePwa(); return; }
   deferredInstallEvent.prompt();
   const { outcome } = await deferredInstallEvent.userChoice;
   deferredInstallEvent = null;
-  if (outcome === 'accepted') {
-    try { localStorage.setItem('pwa:installed', '1'); } catch {}
-  }
+  if (outcome === 'accepted') { try { localStorage.setItem('pwa:installed', '1'); } catch {} }
   hidePwa();
 };
-
 window.dismissPwa = function() { hidePwa(); };
-function hidePwa() {
-  document.getElementById('pwaSheet').classList.remove('open');
-}
-
-// Show on every page load (per user's request)
+function hidePwa() { document.getElementById('pwaSheet').classList.remove('open'); }
 maybeShowPwa();
 
-// Register the service worker
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
 }
 </script>
 </body>

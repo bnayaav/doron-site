@@ -7,7 +7,8 @@ compatibility_date = "2025-01-15"
 # ואז החלף כאן את ה-id בזה שקיבלת.
 [[kv_namespaces]]
 binding = "KV"
-id = "8d31ad8da2784667b8baf6ec92685468"
+id = "REPLACE_WITH_YOUR_KV_ID"
+
 # ——— Environment variables ———
 # אופציונלי: להגביל CORS רק לדומיין של ה-Pages שלך, למשל:
 #   ALLOWED_ORIGINS = "https://doron-site.pages.dev,https://doron.co.il"
