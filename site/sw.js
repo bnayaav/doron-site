@@ -1,5 +1,5 @@
 /* Service Worker - דורון PWA */
-const CACHE_VERSION = 'doron-v1';
+const CACHE_VERSION = 'doron-v2';
 const PRECACHE = [
   '/',
   '/styles.css',
@@ -36,6 +36,11 @@ self.addEventListener('fetch', (event) => {
   
   // Don't cache API calls — always go to the network
   if (url.pathname.startsWith('/api/') || url.hostname.includes('workers.dev')) {
+    return;
+  }
+  
+  // Don't cache admin/editor pages or their assets — admin needs fresh content always
+  if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/editor') || url.pathname.startsWith('/dashboard') || url.pathname.startsWith('/login')) {
     return;
   }
   

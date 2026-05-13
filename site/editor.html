@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>עורך ויזואלי · דורון</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Assistant:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<style id="dynamic-theme"></style>
+<style>
+/* Editor-specific styles */
+.editor-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: #14213D; color: #F5EFE6;
+  padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+  flex-wrap: wrap;
+}
+.editor-bar-title {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 16px; font-weight: 600;
+  display: flex; align-items: center; gap: 8px;
+}
+.editor-bar-title .dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #C9A961;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.editor-bar-actions {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+.editor-bar .save-status {
+  font-size: 13px; opacity: 0.7;
+  display: flex; align-items: center; gap: 6px;
+}
+.editor-bar button, .editor-bar a {
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  padding: 7px 14px; border-radius: 100px;
+  border: none; cursor: pointer; text-decoration: none;
+  transition: all 0.2s;
+}
+.editor-btn-primary {
+  background: #C9A961; color: #14213D;
+}
+.editor-btn-primary:hover { background: #E4CD8D; }
+.editor-btn-ghost {
+  background: transparent; color: #F5EFE6;
+  border: 1px solid rgba(245,239,230,0.3) !important;
+}
+.editor-btn-ghost:hover { background: rgba(245,239,230,0.1); }
+
+body { padding-top: 56px; }
+
+/* Show editable elements on hover */
+[data-content] {
+  position: relative;
+  transition: outline 0.15s, background-color 0.15s;
+  cursor: text;
+  border-radius: 4px;
+}
+[data-content]:hover:not([contenteditable="true"]) {
+  outline: 2px dashed #C9A961;
+  outline-offset: 4px;
+  background: rgba(201,169,97,0.05);
+}
+[data-content][contenteditable="true"] {
+  outline: 2px solid #C9A961;
+  outline-offset: 4px;
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 4px 12px rgba(20,33,61,0.15);
+  cursor: text;
+}
+[data-content]:not([contenteditable="true"])::after {
+  content: "✏️ לחץ לעריכה";
+  position: absolute; top: -28px; right: 0;
+  background: #14213D; color: #F5EFE6;
+  padding: 3px 10px; border-radius: 100px;
+  font-size: 11px; font-weight: 600;
+  font-family: 'Assistant', sans-serif;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+  letter-spacing: normal;
+}
+[data-content]:hover:not([contenteditable="true"])::after {
+  opacity: 1;
+}
+
+/* Image edit zones */
+.editable-image-zone {
+  position: relative;
+  cursor: pointer;
+  transition: outline 0.15s;
+}
+.editable-image-zone:hover {
+  outline: 2px dashed #C9A961;
+  outline-offset: 4px;
+}
+.editable-image-zone::after {
+  content: "🖼️ החלף תמונה";
+  position: absolute; top: 10px; right: 10px;
+  background: #14213D; color: #F5EFE6;
+  padding: 6px 12px; border-radius: 100px;
+  font-size: 12px; font-weight: 600;
+  opacity: 0; transition: opacity 0.15s;
+  z-index: 5;
+  pointer-events: none;
+}
+.editable-image-zone:hover::after { opacity: 1; }
+
+/* Section toggle controls overlay */
+.section-controls {
+  position: absolute;
+  top: 10px; left: 50%; transform: translateX(-50%);
+  background: #14213D; color: #F5EFE6;
+  padding: 6px 14px; border-radius: 100px;
+  font-size: 12px; font-weight: 600;
+  display: flex; gap: 8px; align-items: center;
+  z-index: 50;
+  opacity: 0; transition: opacity 0.2s;
+  pointer-events: none;
+}
+section:hover .section-controls {
+  opacity: 0.95; pointer-events: auto;
+}
+.section-controls button {
+  background: transparent; border: none; color: #F5EFE6;
+  cursor: pointer; padding: 2px 6px; font-size: 12px;
+  border-radius: 4px;
+}
+.section-controls button:hover { background: rgba(245,239,230,0.15); }
+section { position: relative; }
+
+/* Image picker modal */
+.img-modal { 
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(20,33,61,0.6); backdrop-filter: blur(4px);
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.img-modal.open { display: flex; }
+.img-modal-card {
+  background: white; border-radius: 16px;
+  padding: 24px; max-width: 480px; width: 100%;
+}
+.img-modal-card h3 {
+  font-family: 'Frank Ruhl Libre', serif;
+  color: #14213D; margin-bottom: 6px;
+}
+.img-modal-preview {
+  width: 100%; height: 160px; background: #F5EFE6;
+  border-radius: 10px; margin: 14px 0;
+  display: grid; place-items: center;
+  background-size: cover; background-position: center;
+}
+
+@media(max-width:540px){
+  .editor-bar-title small { display:none }
+  .editor-bar button, .editor-bar a { padding: 6px 12px; font-size: 12px; }
+  body { padding-top: 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Editor toolbar -->
+<div class="editor-bar">
+  <div class="editor-bar-title">
+    <span class="dot"></span>
+    מצב עריכה <small style="opacity:.7;font-weight:400">— לחץ על טקסט לעריכה</small>
+  </div>
+  <div class="editor-bar-actions">
+    <span class="save-status" id="saveStatus">נשמר ✓</span>
+    <button class="editor-btn-ghost" onclick="openSectionsPanel()">סקציות 👁</button>
+    <button class="editor-btn-ghost" onclick="openColorsPanel()">צבעים 🎨</button>
+    <a href="/" target="_blank" class="editor-btn-ghost">תצוגה לקוח ↗</a>
+    <a href="/admin.html" class="editor-btn-primary">סיים</a>
+  </div>
+</div>
+
+<!-- The actual page content (same as index.html, but no scripts that depend on user being a visitor) -->
+<header class="site-header">
+  <div class="nav">
+    <a href="#" class="brand" onclick="event.preventDefault()">
+      <div class="brand-mark editable-image-zone" id="brandMark" onclick="openImagePicker('logoUrl', this)">ד</div>
+      <div class="brand-name" data-content="brandName">דורון<small data-content="brandTagline">אימון חיים באמונה</small></div>
+    </a>
+  </div>
+</header>
+
+<section class="hero" id="heroSection">
+  <button class="editable-image-zone section-controls" style="opacity:.95;pointer-events:auto;top:60px" onclick="openImagePicker('heroBgImage', null, true)">🖼️ תמונת רקע</button>
+  <svg class="hero-ornament" viewBox="0 0 400 400" aria-hidden="true">
+    <circle cx="200" cy="200" r="150" fill="none" stroke="currentColor" stroke-width="1" opacity=".4" style="color:var(--gold)"/>
+    <circle cx="200" cy="200" r="100" fill="none" stroke="currentColor" stroke-width="1" opacity=".3" style="color:var(--gold)"/>
+    <circle cx="200" cy="200" r="50" fill="none" stroke="currentColor" stroke-width="1" opacity=".25" style="color:var(--gold)"/>
+  </svg>
+  <div class="hero-inner">
+    <div class="hero-eyebrow" data-content="heroEyebrow">מסע של אמונה · הקשבה · צמיחה</div>
+    <h1><span data-content="heroTitle">להביט על החיים</span><br><em data-content="heroTitleEm">דרך מבט של אמונה</em></h1>
+    <p class="hero-lead" data-content="heroLead">קורסי וידאו מקצועיים, מסגרות אימון אישיות וקבוצתיות, מאמרי יסוד שמתחדשים מדי יום.</p>
+    <div class="hero-actions">
+      <a href="#" onclick="event.preventDefault()" class="btn btn-primary"><span data-content="heroBtnPrimary">לכל הקורסים</span></a>
+      <a href="#" onclick="event.preventDefault()" class="btn btn-outline" data-content="heroBtnSecondary">קרא מאמרים</a>
+    </div>
+  </div>
+</section>
+
+<section class="section about" id="about" data-section-id="about">
+  <div class="section-controls">
+    סקצייה: אודות
+    <button onclick="toggleSection('about')" id="toggle-about">👁 הסתר</button>
+  </div>
+  <div class="section-inner">
+    <div class="about-grid">
+      <div>
+        <div class="section-kicker" data-content="aboutKicker">על שיטת האימון</div>
+        <h2 data-content="aboutTitle">אימון חיים שמתחיל במקור</h2>
+        <div class="about-text mt-16">
+          <p data-content="aboutP1">שיטת אימון ייחודית שנשענת על יסודות באמונה, ומתרגמת אותם לכלים מעשיים לחיי היומיום.</p>
+          <p data-content="aboutP2">הליווי שלי משלב בין שיחה אישית, מסגרות קבוצתיות, וחומרי לימוד יומיים שזמינים כאן באתר.</p>
+        </div>
+      </div>
+      <aside class="about-card">
+        <h4 data-content="contactTitle">פרטי התקשרות</h4>
+        <p class="text-muted" data-content="contactSubtitle">ליצירת קשר או קביעת פגישת היכרות ללא התחייבות</p>
+        <div class="about-card-row" style="margin-top:14px">
+          <div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg></div>
+          <div><strong>טלפון</strong><span data-content="contactPhone">058-7529107</span></div>
+        </div>
+        <div class="about-card-row">
+          <div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+          <div><strong>אימייל</strong><span data-content="contactEmail">doron.avihzer@gmail.com</span></div>
+        </div>
+        <div class="about-card-row">
+          <div class="ico" style="background:rgba(37,211,102,.15);color:#25D366"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></div>
+          <div><strong>וואטסאפ</strong><span data-content="contactWhatsappMsg">שלום דורון, אשמח לקבל פרטים נוספים</span></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section class="section section-courses" id="courses" data-section-id="courses">
+  <div class="section-controls">
+    סקצייה: קורסים
+    <button onclick="toggleSection('courses')" id="toggle-courses">👁 הסתר</button>
+  </div>
+  <div class="section-inner">
+    <div class="section-head">
+      <div class="section-kicker" data-content="coursesKicker">קורסי וידאו דיגיטליים</div>
+      <h2 data-content="coursesTitle">הקורסים שלי</h2>
+      <p class="section-lead" data-content="coursesLead">כל קורס נבנה במיוחד לליווי של מסע פנימי.</p>
+    </div>
+    <div style="background:var(--cream);padding:30px;border-radius:16px;text-align:center;color:var(--text-muted)">
+      💡 הקורסים יוצגו כאן אוטומטית. לעריכת הקורסים, חזור ללשונית "קורסים" בפאנל.
+    </div>
+  </div>
+</section>
+
+<section class="section offerings" id="offerings" data-section-id="offerings">
+  <div class="section-controls">
+    סקצייה: סדנאות והרצאות
+    <button onclick="toggleSection('offerings')" id="toggle-offerings">👁 הסתר</button>
+  </div>
+  <div class="section-inner">
+    <div class="section-head">
+      <div class="section-kicker" data-content="offeringsKicker">לציבור ולמוסדות חינוך</div>
+      <h2 data-content="offeringsTitle">סדנאות, הרצאות ושיעורים</h2>
+      <p class="section-lead" style="color:rgba(245,239,230,.75)" data-content="offeringsLead">תוכן מותאם – לקהילה, לבית ספר, לארגון.</p>
+    </div>
+    <div class="offerings-grid">
+      <div class="offering">
+        <div class="offering-ico">⏱</div>
+        <h4 data-content="offering1Title">סדנאות</h4>
+        <p data-content="offering1Text">סדנאות חווייתיות של מספר שעות, מותאמות למטרת הקבוצה או המוסד.</p>
+      </div>
+      <div class="offering">
+        <div class="offering-ico">🎤</div>
+        <h4 data-content="offering2Title">הרצאות</h4>
+        <p data-content="offering2Text">הרצאות בנושאי יסודות באמונה, חינוך, זוגיות, ועבודה עצמית.</p>
+      </div>
+      <div class="offering">
+        <div class="offering-ico">📖</div>
+        <h4 data-content="offering3Title">שיעורים קבועים</h4>
+        <p data-content="offering3Text">שיעורים שבועיים או חודשיים לקהילות ומוסדות חינוך.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="articles" data-section-id="articles">
+  <div class="section-controls">
+    סקצייה: מאמרים
+    <button onclick="toggleSection('articles')" id="toggle-articles">👁 הסתר</button>
+  </div>
+  <div class="section-inner">
+    <div class="section-head">
+      <div class="section-kicker" data-content="articlesKicker">מאמרי יסוד · טור דעה · ספריית מאמרים</div>
+      <h2 data-content="articlesTitle">תוכן שמתחדש כל יום</h2>
+    </div>
+    <div style="background:var(--cream);padding:30px;border-radius:16px;text-align:center;color:var(--text-muted)">
+      💡 המאמרים יוצגו כאן אוטומטית. לעריכת המאמרים, חזור ללשונית "תוכן" בפאנל.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <h4 data-content="brandName">דורון</h4>
+      <p data-content="footerAbout">אימון חיים באמונה – קורסים דיגיטליים, מסגרות אישיות וקבוצתיות, ותוכן מותאם למוסדות.</p>
+    </div>
+  </div>
+  <div class="footer-bottom">© <span id="year"></span> · <span data-content="footerCopyright">נבנה בעברית ובאהבה</span></div>
+</footer>
+
+<!-- Image picker modal -->
+<div class="img-modal" id="imgModal">
+  <div class="img-modal-card">
+    <h3 id="imgModalTitle">החלף תמונה</h3>
+    <p class="text-muted" style="font-size:13px">הדבק קישור URL של תמונה. מומלץ Imgur, Cloudinary, או Google Drive (פומבי).</p>
+    <div class="img-modal-preview" id="imgPreview"></div>
+    <div class="field">
+      <label>קישור התמונה (URL)</label>
+      <input type="url" id="imgUrlInput" placeholder="https://...">
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="saveImage()">שמור</button>
+      <button class="btn btn-outline" onclick="clearImage()">הסר תמונה</button>
+      <button class="btn btn-ghost" onclick="closeImgModal()">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sections panel -->
+<div class="img-modal" id="sectionsModal">
+  <div class="img-modal-card">
+    <h3>הצגה/הסתרה של סקציות</h3>
+    <p class="text-muted" style="font-size:13px;margin-bottom:14px">כבה סקציות שאינך רוצה להציג באתר כרגע</p>
+    <div id="sectionsToggles" style="display:flex;flex-direction:column;gap:10px"></div>
+    <button class="btn btn-ghost" onclick="closeSectionsModal()" style="margin-top:14px;width:100%">סגור</button>
+  </div>
+</div>
+
+<!-- Colors panel -->
+<div class="img-modal" id="colorsModal">
+  <div class="img-modal-card">
+    <h3>ערכת צבעים</h3>
+    <p class="text-muted" style="font-size:13px;margin-bottom:14px">לחץ על ריבוע צבע כדי לשנות. השינוי נכנס לתוקף מיד.</p>
+    <div id="colorsContent" style="display:flex;flex-direction:column;gap:12px"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px">
+      <button class="btn btn-sm btn-outline" onclick="applyPreset('classic')">קלאסי</button>
+      <button class="btn btn-sm btn-outline" onclick="applyPreset('earth')">אדמתי</button>
+      <button class="btn btn-sm btn-outline" onclick="applyPreset('ocean')">ים</button>
+      <button class="btn btn-sm btn-outline" onclick="applyPreset('forest')">יער</button>
+    </div>
+    <button class="btn btn-ghost" onclick="closeColorsModal()" style="margin-top:10px;width:100%">סגור</button>
+  </div>
+</div>
+
+<script src="/config.js"></script>
+<script src="/api.js"></script>
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+let content = {};
+let currentImageKey = null;
+let saveTimer = null;
+
+// ============ Auth check ============
+if (!Auth.adminToken) {
+  document.body.innerHTML = '<div style="padding:60px 20px;text-align:center;font-family:Assistant,sans-serif"><h2>נדרשת כניסת מנהל</h2><p style="margin:14px 0;color:#888">חזור לפאנל הניהול</p><a href="/admin.html" style="background:#14213D;color:#F5EFE6;padding:12px 24px;border-radius:100px;text-decoration:none;display:inline-block">לפאנל הניהול</a></div>';
+  throw new Error('not admin');
+}
+
+// ============ Load content ============
+loadContent();
+
+async function loadContent() {
+  try {
+    content = await API.adminSiteContent();
+    applyContent();
+    setupEditing();
+    setupSectionToggles();
+    setupColorsPanel();
+  } catch (err) {
+    if (err.status === 401) {
+      Auth.setAdminToken(null);
+      window.location = '/admin.html';
+      return;
+    }
+    alert('שגיאה בטעינת התוכן: ' + err.message);
+  }
+}
+
+function applyContent() {
+  // Text content
+  document.querySelectorAll('[data-content]').forEach(el => {
+    const key = el.getAttribute('data-content');
+    if (content[key] !== undefined && content[key] !== null) {
+      if (key === 'brandName' && el.querySelector('small')) {
+        if (el.firstChild) el.firstChild.nodeValue = content[key];
+      } else {
+        el.textContent = content[key];
+      }
+    }
+  });
+
+  // Theme
+  const navySoft = lighten(content.colorNavy, 10);
+  const goldLight = lighten(content.colorGold, 15);
+  document.getElementById('dynamic-theme').textContent = `
+    :root{
+      --navy:${content.colorNavy};
+      --navy-soft:${navySoft};
+      --cream:${content.colorCream};
+      --cream-light:${content.colorCreamLight};
+      --gold:${content.colorGold};
+      --gold-dark:${content.colorGoldDark};
+      --gold-light:${goldLight};
+    }
+  `;
+
+  // Logo
+  const brandMark = document.getElementById('brandMark');
+  if (content.logoUrl) {
+    brandMark.innerHTML = `<img src="${escapeHtml(content.logoUrl)}" alt="לוגו" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    brandMark.innerHTML = 'ד';
+  }
+
+  // Hero background
+  const hero = document.getElementById('heroSection');
+  if (content.heroBgImage) {
+    hero.style.backgroundImage = `linear-gradient(to bottom, rgba(250,247,242,0.85), rgba(250,247,242,0.95)), url("${content.heroBgImage}")`;
+    hero.style.backgroundSize = 'cover';
+    hero.style.backgroundPosition = 'center';
+  } else {
+    hero.style.backgroundImage = '';
+  }
+
+  // Section visibility
+  ['about','courses','offerings','articles'].forEach(s => {
+    const visible = content['show' + s.charAt(0).toUpperCase() + s.slice(1)] !== false;
+    const el = document.querySelector(`[data-section-id="${s}"]`);
+    if (el) el.style.opacity = visible ? '1' : '0.4';
+    const btn = document.getElementById('toggle-' + s);
+    if (btn) btn.textContent = visible ? '👁 הסתר' : '👁 הצג';
+  });
+}
+
+// ============ Inline editing ============
+function setupEditing() {
+  document.querySelectorAll('[data-content]').forEach(el => {
+    const key = el.getAttribute('data-content');
+    el.addEventListener('click', (e) => {
+      if (el.getAttribute('contenteditable') === 'true') return;
+      e.preventDefault();
+      e.stopPropagation();
+      el.setAttribute('contenteditable', 'true');
+      el.focus();
+      // Select all text for easy replacement
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+    
+    el.addEventListener('blur', () => {
+      if (el.getAttribute('contenteditable') !== 'true') return;
+      el.removeAttribute('contenteditable');
+      const newVal = el.textContent.trim();
+      if (newVal !== content[key]) {
+        content[key] = newVal;
+        scheduleSave();
+      }
+    });
+    
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        el.blur();
+      }
+      if (e.key === 'Escape') {
+        el.textContent = content[key] || '';
+        el.removeAttribute('contenteditable');
+        el.blur();
+      }
+    });
+    
+    // Paste as plain text
+    el.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      document.execCommand('insertText', false, text);
+    });
+  });
+}
+
+// ============ Save (debounced) ============
+function scheduleSave() {
+  setStatus('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(doSave, 800);
+}
+
+async function doSave() {
+  try {
+    await API.saveSiteContent(content);
+    setStatus('saved');
+  } catch (err) {
+    setStatus('error', err.message);
+  }
+}
+
+function setStatus(state, msg) {
+  const el = document.getElementById('saveStatus');
+  if (state === 'saving') el.innerHTML = '<span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span> שומר...';
+  else if (state === 'saved') el.innerHTML = 'נשמר ✓';
+  else if (state === 'error') el.innerHTML = '⚠ שגיאה: ' + (msg || '');
+}
+
+// ============ Image picker ============
+window.openImagePicker = function(key, el, isBackground) {
+  currentImageKey = key;
+  document.getElementById('imgModalTitle').textContent = key === 'logoUrl' ? 'החלף לוגו' : 'החלף תמונת רקע';
+  const input = document.getElementById('imgUrlInput');
+  input.value = content[key] || '';
+  updatePreview(content[key]);
+  document.getElementById('imgModal').classList.add('open');
+  input.focus();
+  input.oninput = () => updatePreview(input.value);
+};
+
+function updatePreview(url) {
+  const p = document.getElementById('imgPreview');
+  if (url) {
+    p.style.backgroundImage = `url("${url}")`;
+    p.textContent = '';
+  } else {
+    p.style.backgroundImage = '';
+    p.textContent = 'אין תמונה';
+    p.style.color = '#888';
+  }
+}
+
+window.saveImage = function() {
+  const url = document.getElementById('imgUrlInput').value.trim();
+  content[currentImageKey] = url;
+  applyContent();
+  scheduleSave();
+  closeImgModal();
+};
+
+window.clearImage = function() {
+  content[currentImageKey] = '';
+  applyContent();
+  scheduleSave();
+  closeImgModal();
+};
+
+window.closeImgModal = function() {
+  document.getElementById('imgModal').classList.remove('open');
+};
+
+// ============ Sections panel ============
+window.openSectionsPanel = function() {
+  const sections = [
+    {key: 'showAbout', label: 'אודות'},
+    {key: 'showCourses', label: 'קורסים'},
+    {key: 'showOfferings', label: 'סדנאות והרצאות'},
+    {key: 'showArticles', label: 'מאמרים'},
+  ];
+  document.getElementById('sectionsToggles').innerHTML = sections.map(s => `
+    <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--cream);border-radius:10px;cursor:pointer">
+      <span class="toggle"><input type="checkbox" id="sec_${s.key}" ${content[s.key] !== false ? 'checked' : ''}><span class="toggle-slider"></span></span>
+      <span style="font-weight:600">${s.label}</span>
+    </label>
+  `).join('');
+  sections.forEach(s => {
+    document.getElementById('sec_' + s.key).addEventListener('change', (e) => {
+      content[s.key] = e.target.checked;
+      applyContent();
+      scheduleSave();
+    });
+  });
+  document.getElementById('sectionsModal').classList.add('open');
+};
+
+window.closeSectionsModal = function() {
+  document.getElementById('sectionsModal').classList.remove('open');
+};
+
+window.toggleSection = function(name) {
+  const key = 'show' + name.charAt(0).toUpperCase() + name.slice(1);
+  content[key] = content[key] === false;
+  applyContent();
+  scheduleSave();
+};
+
+function setupSectionToggles() { /* no-op, handled inline */ }
+
+// ============ Colors panel ============
+const COLOR_KEYS = [
+  {key:'colorNavy', label:'כחול ראשי'},
+  {key:'colorCream', label:'קרם'},
+  {key:'colorCreamLight', label:'קרם בהיר'},
+  {key:'colorGold', label:'זהב'},
+  {key:'colorGoldDark', label:'זהב כהה'},
+];
+
+window.openColorsPanel = function() {
+  document.getElementById('colorsContent').innerHTML = COLOR_KEYS.map(c => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--cream);border-radius:10px">
+      <input type="color" id="col_${c.key}" value="${content[c.key]}" style="width:46px;height:38px;padding:2px;border:1px solid var(--border);border-radius:6px;cursor:pointer">
+      <span style="flex:1;font-weight:600;font-size:14px">${c.label}</span>
+      <span style="font-family:monospace;font-size:12px;color:var(--text-muted)" id="hex_${c.key}">${content[c.key]}</span>
+    </div>
+  `).join('');
+  COLOR_KEYS.forEach(c => {
+    const input = document.getElementById('col_' + c.key);
+    input.addEventListener('input', (e) => {
+      content[c.key] = e.target.value;
+      document.getElementById('hex_' + c.key).textContent = e.target.value;
+      applyContent();
+      scheduleSave();
+    });
+  });
+  document.getElementById('colorsModal').classList.add('open');
+};
+
+window.closeColorsModal = function() {
+  document.getElementById('colorsModal').classList.remove('open');
+};
+
+function setupColorsPanel() { /* setup on open */ }
+
+const COLOR_PRESETS = {
+  classic: { colorNavy:'#14213D', colorCream:'#F5EFE6', colorCreamLight:'#FAF7F2', colorGold:'#C9A961', colorGoldDark:'#A68940' },
+  earth:   { colorNavy:'#4A2E1F', colorCream:'#F0E6D6', colorCreamLight:'#FBF5EA', colorGold:'#D4A574', colorGoldDark:'#A07142' },
+  ocean:   { colorNavy:'#0F4C5C', colorCream:'#E8F0F2', colorCreamLight:'#F5FAFB', colorGold:'#FFA07A', colorGoldDark:'#E8694D' },
+  forest:  { colorNavy:'#2D3D2F', colorCream:'#EBE9D5', colorCreamLight:'#F7F5E8', colorGold:'#D4B85A', colorGoldDark:'#9E843A' },
+};
+
+window.applyPreset = function(name) {
+  const p = COLOR_PRESETS[name];
+  if (!p) return;
+  Object.assign(content, p);
+  applyContent();
+  scheduleSave();
+  // refresh color inputs
+  if (document.getElementById('colorsModal').classList.contains('open')) openColorsPanel();
+};
+
+// ============ Helpers ============
+function lighten(hex, percent) {
+  if (!hex || !hex.startsWith('#')) return hex;
+  let h = hex.slice(1);
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const num = parseInt(h, 16);
+  let r = Math.min(255, Math.max(0, (num >> 16) + Math.round(255 * percent / 100)));
+  let g = Math.min(255, Math.max(0, ((num >> 8) & 0xff) + Math.round(255 * percent / 100)));
+  let b = Math.min(255, Math.max(0, (num & 0xff) + Math.round(255 * percent / 100)));
+  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+}
+</script>
+</body>
+</html>

@@ -114,189 +114,28 @@
     </div>
     
     <!-- Design (Page Builder) -->
+    <!-- Design (visual editor entry) -->
     <div class="dash-pane" id="pane-design" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:10px;flex-wrap:wrap">
-        <div>
-          <h3 style="font-size:22px;color:var(--navy)">עיצוב האתר</h3>
-          <p class="text-muted" style="margin-top:4px">כל שינוי נשמר ומופיע באתר תוך שניות. בדוק את התוצאה ב-<a href="/" target="_blank" style="color:var(--gold-dark)">דף הבית ↗</a></p>
-        </div>
-        <button class="btn btn-outline btn-sm" onclick="resetDesign()">שחזור ברירת מחדל</button>
+      <h3 style="font-size:22px;color:var(--navy);margin-bottom:6px">עיצוב האתר</h3>
+      <p class="dash-sub">ערוך את התוכן, התמונות, והצבעים של האתר בצורה ויזואלית — לחץ על כל אלמנט באתר כדי לערוך אותו.</p>
+      <div style="background:linear-gradient(135deg,var(--navy),var(--navy-soft));color:var(--cream-light);padding:36px 28px;border-radius:18px;text-align:center;margin-top:14px">
+        <div style="font-size:48px;margin-bottom:14px">🎨</div>
+        <h3 style="color:var(--cream-light);font-family:'Frank Ruhl Libre',serif;font-size:26px;margin-bottom:10px">עורך ויזואלי</h3>
+        <p style="font-size:15.5px;line-height:1.7;opacity:.85;max-width:480px;margin:0 auto 22px">תפתח גרסה חיה של האתר עם מסגרות עריכה. לחץ על כל טקסט/תמונה/צבע כדי לשנות אותו — שינויים נשמרים אוטומטית.</p>
+        <a href="/editor.html" class="btn btn-gold" style="font-size:15px;padding:14px 32px">✏️ פתח עורך ויזואלי</a>
       </div>
-      <div id="designMsg"></div>
-
-      <!-- Brand & Logo -->
-      <div class="section-card">
-        <h4 style="margin-bottom:14px">🎨 מיתוג</h4>
-        <div class="field-group">
-          <div class="field"><label>שם המותג</label><input type="text" id="d_brandName"></div>
-          <div class="field"><label>סלוגן/תיאור קצר</label><input type="text" id="d_brandTagline"></div>
-        </div>
-        <div class="field">
-          <label>לוגו (URL של תמונה — מומלץ ריבוע 200×200)</label>
-          <input type="url" id="d_logoUrl" placeholder="https://...">
-          <p class="hint">השאר ריק להצגת האות ד' כברירת מחדל. הצעות: imgur.com / cloudinary / Google Drive (Public)</p>
-        </div>
-      </div>
-
-      <!-- Colors -->
-      <div class="section-card">
-        <h4 style="margin-bottom:14px">🌈 ערכת צבעים</h4>
-        <p class="text-muted" style="margin-bottom:14px">לחץ על כל ריבוע לבחירת צבע. שינויים נכנסים לתוקף מיד.</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
-          <div class="field"><label>כחול ראשי</label>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input type="color" id="d_colorNavy" style="width:50px;height:42px;padding:2px;cursor:pointer">
-              <input type="text" id="d_colorNavyHex" style="flex:1" placeholder="#14213D">
-            </div>
-          </div>
-          <div class="field"><label>קרם בהיר</label>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input type="color" id="d_colorCreamLight" style="width:50px;height:42px;padding:2px;cursor:pointer">
-              <input type="text" id="d_colorCreamLightHex" style="flex:1">
-            </div>
-          </div>
-          <div class="field"><label>קרם</label>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input type="color" id="d_colorCream" style="width:50px;height:42px;padding:2px;cursor:pointer">
-              <input type="text" id="d_colorCreamHex" style="flex:1">
-            </div>
-          </div>
-          <div class="field"><label>זהב</label>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input type="color" id="d_colorGold" style="width:50px;height:42px;padding:2px;cursor:pointer">
-              <input type="text" id="d_colorGoldHex" style="flex:1">
-            </div>
-          </div>
-          <div class="field"><label>זהב כהה</label>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input type="color" id="d_colorGoldDark" style="width:50px;height:42px;padding:2px;cursor:pointer">
-              <input type="text" id="d_colorGoldDarkHex" style="flex:1">
-            </div>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-          <button class="btn btn-sm btn-outline" onclick="applyPreset('classic')">קלאסי (כחול/זהב)</button>
-          <button class="btn btn-sm btn-outline" onclick="applyPreset('earth')">אדמתי (חום/חרדל)</button>
-          <button class="btn btn-sm btn-outline" onclick="applyPreset('ocean')">ים (טורקיז/קורל)</button>
-          <button class="btn btn-sm btn-outline" onclick="applyPreset('forest')">יער (ירוק/חרדל)</button>
-        </div>
-      </div>
-
-      <!-- Section visibility -->
-      <div class="section-card">
-        <h4 style="margin-bottom:14px">👁️ הצגה/הסתרה של סקציות</h4>
-        <p class="text-muted" style="margin-bottom:14px">כבה סקציות שאתה לא רוצה להציג באתר כרגע</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
-          <label style="display:flex;gap:10px;align-items:center;cursor:pointer;padding:12px;background:var(--cream);border-radius:10px">
-            <span class="toggle"><input type="checkbox" id="d_showAbout"><span class="toggle-slider"></span></span>
-            <span style="font-size:14px;font-weight:600">סקציית "אודות"</span>
-          </label>
-          <label style="display:flex;gap:10px;align-items:center;cursor:pointer;padding:12px;background:var(--cream);border-radius:10px">
-            <span class="toggle"><input type="checkbox" id="d_showCourses"><span class="toggle-slider"></span></span>
-            <span style="font-size:14px;font-weight:600">סקציית "קורסים"</span>
-          </label>
-          <label style="display:flex;gap:10px;align-items:center;cursor:pointer;padding:12px;background:var(--cream);border-radius:10px">
-            <span class="toggle"><input type="checkbox" id="d_showOfferings"><span class="toggle-slider"></span></span>
-            <span style="font-size:14px;font-weight:600">סקציית "סדנאות והרצאות"</span>
-          </label>
-          <label style="display:flex;gap:10px;align-items:center;cursor:pointer;padding:12px;background:var(--cream);border-radius:10px">
-            <span class="toggle"><input type="checkbox" id="d_showArticles"><span class="toggle-slider"></span></span>
-            <span style="font-size:14px;font-weight:600">סקציית "מאמרים"</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Hero -->
-      <div class="section-card">
-        <h4 style="margin-bottom:14px">🌅 כותרת ראשית (Hero)</h4>
-        <div class="field"><label>שורה עליונה קטנה</label><input type="text" id="d_heroEyebrow"></div>
-        <div class="field-group">
-          <div class="field"><label>כותרת ראשית</label><input type="text" id="d_heroTitle"></div>
-          <div class="field"><label>כותרת ראשית (חלק נטוי)</label><input type="text" id="d_heroTitleEm"></div>
-        </div>
-        <div class="field"><label>תיאור מתחת לכותרת</label><textarea id="d_heroLead" style="min-height:60px"></textarea></div>
-        <div class="field-group">
-          <div class="field"><label>טקסט כפתור ראשי</label><input type="text" id="d_heroBtnPrimary"></div>
-          <div class="field"><label>טקסט כפתור משני</label><input type="text" id="d_heroBtnSecondary"></div>
-        </div>
-        <div class="field"><label>תמונת רקע (URL — אופציונלי)</label><input type="url" id="d_heroBgImage" placeholder="https://..."></div>
-      </div>
-
-      <!-- About section -->
-      <div class="section-card">
-        <h4 style="margin-bottom:14px">📖 אודות</h4>
-        <div class="field"><label>שורה עליונה</label><input type="text" id="d_aboutKicker"></div>
-        <div class="field"><label>כותרת</label><input type="text" id="d_aboutTitle"></div>
-        <div class="field"><label>פסקה ראשונה</label><textarea id="d_aboutP1" style="min-height:90px"></textarea></div>
-        <div class="field"><label>פסקה שנייה</label><textarea id="d_aboutP2" style="min-height:90px"></textarea></div>
-      </div>
-
-      <!-- Contact -->
-      <div class="section-card">
-        <h4 style="margin-bottom:14px">📞 פרטי קשר</h4>
-        <div class="field"><label>כותרת הקופסה</label><input type="text" id="d_contactTitle"></div>
-        <div class="field"><label>תת-כותרת</label><input type="text" id="d_contactSubtitle"></div>
-        <div class="field-group">
-          <div class="field"><label>טלפון</label><input type="tel" id="d_contactPhone"></div>
-          <div class="field"><label>אימייל</label><input type="email" id="d_contactEmail"></div>
-        </div>
-        <div class="field-group">
-          <div class="field"><label>וואטסאפ (מספר ללא 0 וללא +)</label><input type="tel" id="d_contactWhatsappNum" placeholder="972587529107"></div>
-          <div class="field"><label>הודעת ברירת מחדל לוואטסאפ</label><input type="text" id="d_contactWhatsappMsg"></div>
-        </div>
-      </div>
-
-      <!-- Courses section text -->
-      <div class="section-card">
-        <h4 style="margin-bottom:14px">🎓 כותרת סקציית "קורסים"</h4>
-        <div class="field"><label>שורה עליונה</label><input type="text" id="d_coursesKicker"></div>
-        <div class="field"><label>כותרת</label><input type="text" id="d_coursesTitle"></div>
-        <div class="field"><label>טקסט תיאור</label><textarea id="d_coursesLead" style="min-height:60px"></textarea></div>
-      </div>
-
-      <!-- Offerings -->
-      <div class="section-card">
-        <h4 style="margin-bottom:14px">🎤 סדנאות והרצאות</h4>
-        <div class="field"><label>שורה עליונה</label><input type="text" id="d_offeringsKicker"></div>
-        <div class="field"><label>כותרת</label><input type="text" id="d_offeringsTitle"></div>
-        <div class="field"><label>תיאור</label><textarea id="d_offeringsLead" style="min-height:60px"></textarea></div>
-        <div class="field-group">
-          <div class="field"><label>כרטיס 1 - כותרת</label><input type="text" id="d_offering1Title"></div>
-          <div class="field"><label>כרטיס 1 - טקסט</label><input type="text" id="d_offering1Text"></div>
-        </div>
-        <div class="field-group">
-          <div class="field"><label>כרטיס 2 - כותרת</label><input type="text" id="d_offering2Title"></div>
-          <div class="field"><label>כרטיס 2 - טקסט</label><input type="text" id="d_offering2Text"></div>
-        </div>
-        <div class="field-group">
-          <div class="field"><label>כרטיס 3 - כותרת</label><input type="text" id="d_offering3Title"></div>
-          <div class="field"><label>כרטיס 3 - טקסט</label><input type="text" id="d_offering3Text"></div>
-        </div>
-      </div>
-
-      <!-- Articles section text -->
-      <div class="section-card">
-        <h4 style="margin-bottom:14px">📚 כותרת סקציית "מאמרים"</h4>
-        <div class="field"><label>שורה עליונה</label><input type="text" id="d_articlesKicker"></div>
-        <div class="field"><label>כותרת</label><input type="text" id="d_articlesTitle"></div>
-      </div>
-
-      <!-- Footer -->
-      <div class="section-card">
-        <h4 style="margin-bottom:14px">⚓ תחתית האתר (Footer)</h4>
-        <div class="field"><label>תיאור המותג בפוטר</label><textarea id="d_footerAbout" style="min-height:70px"></textarea></div>
-        <div class="field"><label>טקסט copyright</label><input type="text" id="d_footerCopyright"></div>
-      </div>
-
-      <!-- Save bar (sticky) -->
-      <div style="position:sticky;bottom:0;background:var(--cream-light);padding:18px 0;margin:30px 0 0;border-top:2px solid var(--gold);z-index:10">
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="saveDesign()" id="saveDesignBtn">💾 שמור שינויים</button>
-          <a href="/" target="_blank" class="btn btn-outline">👁 הצג באתר ↗</a>
-          <span class="text-muted" style="font-size:13px">השינויים יופיעו באתר תוך מספר שניות</span>
-        </div>
+      <div style="background:var(--cream);border-radius:14px;padding:18px 22px;margin-top:18px">
+        <h4 style="margin-bottom:10px;font-size:16px">💡 מה אפשר לערוך בעורך?</h4>
+        <ul style="padding-right:18px;line-height:1.9;color:var(--text-soft);font-size:14.5px;margin:0">
+          <li>כל טקסט באתר — לחיצה אחת ומתחילים להקליד</li>
+          <li>הלוגו ותמונת הרקע של ה-Hero</li>
+          <li>5 צבעי האתר — עם 4 ערכות מוכנות (קלאסי/אדמתי/ים/יער)</li>
+          <li>הצגה/הסתרה של סקציות שלמות</li>
+          <li>פרטי קשר (טלפון, מייל, וואטסאפ)</li>
+        </ul>
       </div>
     </div>
+    
     
     <!-- Users -->
     <div class="dash-pane" id="pane-users" style="display:none">
@@ -447,7 +286,6 @@ function showAdminTab(name) {
   if (name === 'overview') loadOverview();
   if (name === 'catalog') loadCatalog();
   if (name === 'content') loadContent();
-  if (name === 'design') loadDesign();
   if (name === 'users') loadUsers();
   if (name === 'orders') loadOrders();
   if (name === 'chats') loadChats();
@@ -1115,110 +953,6 @@ window.changeAdminPassword = async function() {
   } catch (err) { msg.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
 };
 
-// ==================== Design (Page Builder) ====================
-const DESIGN_FIELDS = [
-  'brandName','brandTagline','logoUrl',
-  'colorNavy','colorCream','colorCreamLight','colorGold','colorGoldDark',
-  'heroEyebrow','heroTitle','heroTitleEm','heroLead','heroBgImage','heroBtnPrimary','heroBtnSecondary',
-  'aboutKicker','aboutTitle','aboutP1','aboutP2',
-  'contactTitle','contactSubtitle','contactPhone','contactEmail','contactWhatsappNum','contactWhatsappMsg',
-  'coursesKicker','coursesTitle','coursesLead',
-  'offeringsKicker','offeringsTitle','offeringsLead',
-  'offering1Title','offering1Text','offering2Title','offering2Text','offering3Title','offering3Text',
-  'articlesKicker','articlesTitle',
-  'footerAbout','footerCopyright'
-];
-const DESIGN_BOOL_FIELDS = ['showAbout','showCourses','showOfferings','showArticles'];
-
-async function loadDesign() {
-  try {
-    const c = await API.adminSiteContent();
-    // Text fields
-    DESIGN_FIELDS.forEach(k => {
-      const el = document.getElementById('d_' + k);
-      if (el) el.value = c[k] || '';
-    });
-    // Boolean toggles
-    DESIGN_BOOL_FIELDS.forEach(k => {
-      const el = document.getElementById('d_' + k);
-      if (el) el.checked = c[k] !== false;
-    });
-    // Color pickers — sync the hex inputs
-    ['colorNavy','colorCream','colorCreamLight','colorGold','colorGoldDark'].forEach(k => {
-      const picker = document.getElementById('d_' + k);
-      const hex = document.getElementById('d_' + k + 'Hex');
-      if (picker && hex) {
-        picker.value = c[k] || '#000000';
-        hex.value = c[k] || '';
-        picker.oninput = () => { hex.value = picker.value; };
-        hex.oninput = () => { if (/^#[0-9a-fA-F]{6}$/.test(hex.value)) picker.value = hex.value; };
-      }
-    });
-  } catch (err) {
-    document.getElementById('designMsg').innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`;
-  }
-}
-
-async function saveDesign() {
-  const content = {};
-  DESIGN_FIELDS.forEach(k => {
-    const el = document.getElementById('d_' + k);
-    if (el) content[k] = el.value;
-  });
-  DESIGN_BOOL_FIELDS.forEach(k => {
-    const el = document.getElementById('d_' + k);
-    if (el) content[k] = el.checked;
-  });
-  // Read colors from the hex inputs (more authoritative than picker for text entries)
-  ['colorNavy','colorCream','colorCreamLight','colorGold','colorGoldDark'].forEach(k => {
-    const hex = document.getElementById('d_' + k + 'Hex');
-    if (hex && /^#[0-9a-fA-F]{6}$/.test(hex.value)) content[k] = hex.value;
-  });
-  const msg = document.getElementById('designMsg');
-  const btn = document.getElementById('saveDesignBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> שומר...';
-  try {
-    await API.saveSiteContent(content);
-    msg.innerHTML = '<div class="form-success">✓ נשמר! ראה את האתר בלשונית חדשה כדי לבדוק</div>';
-    setTimeout(() => msg.innerHTML = '', 4000);
-  } catch (err) {
-    msg.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '💾 שמור שינויים';
-  }
-}
-
-async function resetDesign() {
-  if (!confirm('לשחזר את כל ההגדרות לברירת מחדל? כל הטקסטים והצבעים שערכת יאבדו.')) return;
-  try {
-    await API.resetSiteContent();
-    loadDesign();
-    document.getElementById('designMsg').innerHTML = '<div class="form-success">שוחזר בהצלחה</div>';
-  } catch (err) {
-    document.getElementById('designMsg').innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`;
-  }
-}
-
-const COLOR_PRESETS = {
-  classic: { colorNavy:'#14213D', colorCream:'#F5EFE6', colorCreamLight:'#FAF7F2', colorGold:'#C9A961', colorGoldDark:'#A68940' },
-  earth:   { colorNavy:'#4A2E1F', colorCream:'#F0E6D6', colorCreamLight:'#FBF5EA', colorGold:'#D4A574', colorGoldDark:'#A07142' },
-  ocean:   { colorNavy:'#0F4C5C', colorCream:'#E8F0F2', colorCreamLight:'#F5FAFB', colorGold:'#FFA07A', colorGoldDark:'#E8694D' },
-  forest:  { colorNavy:'#2D3D2F', colorCream:'#EBE9D5', colorCreamLight:'#F7F5E8', colorGold:'#D4B85A', colorGoldDark:'#9E843A' },
-};
-window.applyPreset = function(name) {
-  const p = COLOR_PRESETS[name];
-  if (!p) return;
-  Object.entries(p).forEach(([k, v]) => {
-    const picker = document.getElementById('d_' + k);
-    const hex = document.getElementById('d_' + k + 'Hex');
-    if (picker) picker.value = v;
-    if (hex) hex.value = v;
-  });
-};
-window.saveDesign = saveDesign;
-window.resetDesign = resetDesign;
 
 window.closeModal = function() {
   document.getElementById('modalBackdrop').classList.remove('open');
